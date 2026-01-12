@@ -1,0 +1,17 @@
+# Chặn node_modules ở cả 2 bên
+backend/node_modules/
+frontend/node_modules/
+
+# Chặn file môi trường (bảo mật)
+backend/.env
+frontend/.env
+*.local
+
+# Chặn thư mục build
+backend/dist/
+frontend/dist/
+frontend/build/
+
+# Các file rác khác
+.DS_Store
+node_modules/
