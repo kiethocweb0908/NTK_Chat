@@ -6,8 +6,10 @@
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types", "./src/@types"]
   },
-  "include": ["src"],
+  "include": ["src", "src/@types/*.d.ts"],
+  "files": ["src/@types/express.d.ts"],
   "exclude": ["node_modules", "dist", "test"]
 }

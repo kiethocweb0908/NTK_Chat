@@ -18,7 +18,7 @@ interface IGroup {
 }
 
 export interface IConversation {
-  type: 'direct' | 'group';
+  type: 'direct' | 'group' | 'self';
   group?: IGroup;
 
   participants: IParticipant[];
@@ -95,7 +95,7 @@ const conversationSchema = new Schema<IConversation>(
   {
     type: {
       type: String,
-      enum: ['direct', 'group'],
+      enum: ['self', 'direct', 'group'],
       required: true,
     },
     group: {
@@ -132,6 +132,11 @@ conversationSchema.index({
   'participants.userId': 1,
   lastMessageAt: -1,
 });
+
+conversationSchema.index(
+  { type: 1, 'participants.userId': 1 },
+  { unique: true, partialFilterExpression: { type: 'direct' } }
+);
 
 const Conversation = mongoose.model<IConversation>(
   'Conversation',

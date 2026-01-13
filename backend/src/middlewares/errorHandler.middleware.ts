@@ -15,7 +15,7 @@ export const errorHandler: ErrorRequestHandler = (
 
   if (isAppError) {
     return res.status(error.statusCode).json({
-      message: error.message, // Đây chính là "username hoặc password không chính xác"
+      message: error.message,
       errorCode: error.errorCode,
     });
   }

@@ -2,8 +2,8 @@ import { IUser } from '../models/User.model';
 
 declare global {
   namespace Express {
-    interface User extends IUser {
-      _id?: any;
+    interface Request {
+      user?: mongoose.HydratedDocument<IUser>;
     }
   }
 }

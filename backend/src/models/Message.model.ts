@@ -1,11 +1,15 @@
 import mongoose, { Schema } from 'mongoose';
 
+interface IImages {
+  imgUrl?: string;
+  imgId?: string;
+}
+
 export interface IMessage {
   conversationId: mongoose.Types.ObjectId;
   senderId: mongoose.Types.ObjectId;
   content?: string;
-  imgUrl?: string;
-  imgId?: string;
+  images: IImages[];
 
   replyTo?: mongoose.Types.ObjectId;
 
@@ -30,12 +34,13 @@ const messageSchema = new Schema<IMessage>(
       type: String,
       trim: true,
     },
-    imgUrl: {
-      type: String,
-    },
-    imgId: {
-      type: String,
-    },
+    images: [
+      {
+        imgUrl: String,
+
+        imgId: String,
+      },
+    ],
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',

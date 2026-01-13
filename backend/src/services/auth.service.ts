@@ -20,7 +20,7 @@ export const registerService = async (data: RegisterSchemaType) => {
     userName: data.userName,
     email: data.email,
     hashPassword: data.password,
-    displayName: data.lastName + data.firstName,
+    displayName: `${data.lastName} ${data.firstName}`,
   });
 
   return newUser;

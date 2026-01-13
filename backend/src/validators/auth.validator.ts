@@ -1,11 +1,5 @@
 import { z } from 'zod';
 
-export const emailSchema = z
-  .string()
-  .trim()
-  .email('Invalid email address')
-  .min(6);
-
 export const registerSchema = z.object({
   firstName: z.string().min(1, 'Tên bắt buộc phải có').trim(),
   lastName: z.string().min(1, 'Họ bắt buộc phải có').trim(),
