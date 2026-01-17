@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.middleware';
-import { groupSchema } from '../validators/conversation.validator';
+import {
+  getMessagesSchema,
+  groupSchema,
+} from '../validators/conversation.validator';
 import * as conversationService from '../services/conversation.service';
 import { HTTPSTATUS } from '../config/http.config';
 import Conversation from '../models/Conversation.model';
@@ -49,6 +52,20 @@ export const getConversations = asyncHandler(
 );
 
 // lấy ds tn của 1 hộp thoại
-export const getMessages = asyncHandler(
-  async (req: Request, res: Response) => {}
-);
+export const getMessages = asyncHandler(async (req: Request, res: Response) => {
+  const validatedData = getMessagesSchema.parse({
+    ...req.query,
+    conversationId: req.params.conversationId,
+  });
+
+  const data = validatedData;
+
+  const { messages, nextCursor } = await conversationService.getMessagesService(
+    data
+  );
+
+  return res.status(HTTPSTATUS.OK).json({
+    messages,
+    nextCursor,
+  });
+});

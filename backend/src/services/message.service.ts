@@ -1,11 +1,14 @@
 import Conversation, { IConversation } from '../models/Conversation.model';
 import Message from '../models/Message.model';
-import { sendDirectMessageSchemaType } from '../validators/message.validator';
+import {
+  sendDirectMessageSchemaType,
+  sendGroupMessageSchemaType,
+} from '../validators/message.validator';
 import {
   checkMessageSpamLimit,
   updateConversationAfterCreateMessage,
 } from '../utils/messageHelper';
-import { BadRequestException } from '../utils/app-error';
+import { BadRequestException, NotFoundException } from '../utils/app-error';
 import mongoose from 'mongoose';
 
 // gửi tn 1-1
@@ -13,7 +16,7 @@ export const sendDirectService = async (
   data: sendDirectMessageSchemaType,
   senderId: string
 ) => {
-  const { recipientId, conversationId, content } = data;
+  const { recipientId, conversationId, content, images } = data;
   const isSelf = recipientId.toString() === senderId.toString();
   let conversation;
 
@@ -57,6 +60,7 @@ export const sendDirectService = async (
     conversationId: conversation._id,
     senderId,
     content,
+    // sau này thêm ảnh
   });
 
   // cập nhật hộp thoại sau khi tạo tin mới
@@ -67,7 +71,34 @@ export const sendDirectService = async (
 };
 
 // gửi tn nhóm
-export const sendGroupService = async () => {};
+export const sendGroupService = async (
+  data: sendGroupMessageSchemaType,
+  senderId: string
+) => {
+  const { conversationId, content, images } = data;
+
+  // tìm hộp thoại
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    'participants.userId': senderId,
+  });
+  if (!conversation)
+    throw new NotFoundException(
+      'Không tìm thấy hội thoại hoặc bạn không phải thành viên'
+    );
+
+  const message = await Message.create({
+    conversationId: conversation._id,
+    senderId,
+    content,
+    // sau này thêm ảnh
+  });
+
+  updateConversationAfterCreateMessage(conversation, message, senderId);
+  await conversation.save();
+
+  return message;
+};
 
 //===============================================================
 //=======================HELPER FUNCTION=========================
@@ -80,7 +111,7 @@ const validateParticipant = (
 ) => {
   const pIds = conversation.participants.map((p) => p.userId.toString());
   if (!pIds.includes(senderId) || !pIds.includes(recipientId))
-    throw new BadRequestException('Thành viên không hợp lệ trong hội thoại');
+    throw new BadRequestException('Bạn không phải thành viện của hội thoại');
 };
 
 // tìm conversation

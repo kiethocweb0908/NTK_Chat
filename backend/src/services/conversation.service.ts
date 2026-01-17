@@ -1,8 +1,12 @@
 import path from 'path';
 import Conversation from '../models/Conversation.model';
 import { BadRequestException } from '../utils/app-error';
-import { groupSchemaType } from '../validators/conversation.validator';
+import {
+  getMessagesQueryType,
+  groupSchemaType,
+} from '../validators/conversation.validator';
 import { IPopulatedParticipant } from '../types/populated.type';
+import Message from '../models/Message.model';
 
 export const createGroupService = async (
   data: groupSchemaType,
@@ -84,4 +88,28 @@ export const getConversationsService = async (userId: string) => {
   return formatted;
 };
 
-export const getMessagesService = async () => {};
+export const getMessagesService = async (data: getMessagesQueryType) => {
+  const { conversationId, limit = 50, cursor } = data;
+  const query: Record<string, any> = { conversationId };
+
+  if (cursor) {
+    query.createdAt = { $lt: new Date(cursor) };
+  }
+
+  let messages = await Message.find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit + 1);
+  // .populate([{ path: 'senderId', select: 'displayName avatarUrl' }]);
+
+  let nextCursor = null;
+
+  if (messages.length > limit) {
+    const nextMessage = messages[messages.length - 1];
+    nextCursor = nextMessage.createdAt.toISOString();
+    messages.pop();
+  }
+
+  messages = messages.reverse();
+
+  return { messages, nextCursor };
+};

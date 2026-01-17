@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.middleware';
-import { sendDirectMessageSchema } from '../validators/message.validator';
+import {
+  sendDirectMessageSchema,
+  sendGroupMessageSchema,
+} from '../validators/message.validator';
 import * as messageService from '../services/message.service';
 import { HTTPSTATUS } from '../config/http.config';
 
@@ -20,5 +23,14 @@ export const sendDirectMessage = asyncHandler(
 
 // gửi tin nhắn group
 export const sendGroupMessage = asyncHandler(
-  async (req: Request, res: Response) => {}
+  async (req: Request, res: Response) => {
+    const data = sendGroupMessageSchema.parse(req.body);
+    const senderId = req.user._id;
+
+    const message = await messageService.sendGroupService(data, senderId);
+
+    res.status(HTTPSTATUS.CREATED).json({
+      message,
+    });
+  }
 );
