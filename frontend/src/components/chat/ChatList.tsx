@@ -7,15 +7,16 @@ import UnreadCountBadge from './UnreadCountBadge';
 import { useSidebar } from '@/components/ui/sidebar';
 import UserAvatar from './UserAvatar';
 import GroupChatAvatar from './GroupChatAvatar';
+import { useSocketStore } from '@/stores/useSocketStore';
 
 const ChatList = () => {
-  console.log('ChatList Rendering...');
   const conversations = useChatStore((state) => state.conversations);
   const user = useAuthStore((s) => s.user);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
   const messages = useChatStore((s) => s.messages);
   const fetchMessages = useChatStore((s) => s.fetchMessages);
+  const onlineUsers = useSocketStore((s) => s.onlineUsers);
 
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
@@ -45,6 +46,7 @@ const ChatList = () => {
         // 1. Tính toán logic cho từng card
         let name = '';
         let avatarUrl = null;
+        let userId = '';
 
         if (convo.type === 'direct') {
           const otherUser = convo.participants.find((p) => p._id !== user._id);
@@ -52,6 +54,7 @@ const ChatList = () => {
 
           name = otherUser.displayName ?? 'Người dùng';
           avatarUrl = otherUser.avatarUrl;
+          userId = otherUser._id;
         }
 
         if (convo.type === 'group') {
@@ -59,7 +62,8 @@ const ChatList = () => {
         }
 
         if (convo.type === 'self') {
-          name = 'Ghi chú của tôi';
+          name = `Ghi chú: ${user.displayName}`;
+          userId = user._id;
         }
 
         const convoId = convo._id;
@@ -77,7 +81,9 @@ const ChatList = () => {
             ) : (
               <>
                 <UserAvatar type="chat" name={name || ''} avatarUrl={avatarUrl} />
-                <StatusBadge status="offline" />
+                <StatusBadge
+                  status={onlineUsers.includes(userId) ? 'online' : 'offline'}
+                />
               </>
             )}
             {unreadCount > 0 && <UnreadCountBadge unreadCount={unreadCount} />}

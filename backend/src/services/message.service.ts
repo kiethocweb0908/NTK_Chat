@@ -6,10 +6,12 @@ import {
 } from '../validators/message.validator';
 import {
   checkMessageSpamLimit,
+  emitNewMessage,
   updateConversationAfterCreateMessage,
 } from '../utils/messageHelper';
 import { BadRequestException, NotFoundException } from '../utils/app-error';
 import mongoose from 'mongoose';
+import { io } from '../socket/index.socket';
 
 // gửi tn 1-1
 export const sendDirectService = async (
@@ -44,12 +46,16 @@ export const sendDirectService = async (
   // kiểm tra nếu chat với người khác
   if (!isSelf) {
     // kiểm tra người gửi/nhận có nằm trong hội thoại
-    validateParticipant(conversation, senderId, recipientId);
+    validateParticipant(
+      conversation,
+      senderId.toString(),
+      recipientId.toString()
+    );
 
     // Kiểm tra bạn bè và tránh spam
     const limit = await checkMessageSpamLimit(
-      senderId,
-      recipientId,
+      senderId.toString(),
+      recipientId.toString(),
       conversation._id.toString()
     );
     if (!limit.allowed) throw new BadRequestException(limit.message);
@@ -66,6 +72,8 @@ export const sendDirectService = async (
   // cập nhật hộp thoại sau khi tạo tin mới
   updateConversationAfterCreateMessage(conversation, message, senderId);
   await conversation.save();
+
+  emitNewMessage(io, conversation, message);
 
   return message;
 };
@@ -96,6 +104,8 @@ export const sendGroupService = async (
 
   updateConversationAfterCreateMessage(conversation, message, senderId);
   await conversation.save();
+
+  emitNewMessage(io, conversation, message);
 
   return message;
 };

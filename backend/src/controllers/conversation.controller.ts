@@ -60,12 +60,22 @@ export const getMessages = asyncHandler(async (req: Request, res: Response) => {
 
   const data = validatedData;
 
-  const { messages, nextCursor } = await conversationService.getMessagesService(
-    data
-  );
+  const { messages, nextCursor } =
+    await conversationService.getMessagesService(data);
 
   return res.status(HTTPSTATUS.OK).json({
     messages,
     nextCursor,
   });
 });
+
+export const getUserConversationsForSocketIO = async (userId: string) => {
+  try {
+    const conversations =
+      await conversationService.getConversationsForSocketService(userId);
+    return conversations;
+  } catch (error) {
+    console.error('Lỗi khi fetch conversations: ', error);
+    return [];
+  }
+};

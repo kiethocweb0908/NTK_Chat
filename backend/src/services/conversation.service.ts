@@ -113,3 +113,12 @@ export const getMessagesService = async (data: getMessagesQueryType) => {
 
   return { messages, nextCursor };
 };
+
+export const getConversationsForSocketService = async (userId: string) => {
+  const conversations = await Conversation.find(
+    { 'participants.userId': userId },
+    { _id: 1 }
+  );
+
+  return conversations.map((c) => c._id.toString());
+};

@@ -11,14 +11,24 @@ const ProtectedRoute = () => {
 
   const [starting, setStarting] = useState(true);
 
-  const init = async () => {
-    if (!accessToken) await refresh();
-    if (accessToken && !user) await fetchMe();
-    setStarting(false);
-  };
-
   useEffect(() => {
-    init();
+    const checkAuth = async () => {
+      try {
+        if (!accessToken && user) {
+          await refresh();
+        }
+
+        if (accessToken && !user) {
+          await fetchMe();
+        }
+      } catch (error) {
+        console.log('Chưa đăng nhập hoặc phiên làm việc hết hạn');
+      } finally {
+        setStarting(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   if (starting || loading) {
@@ -27,11 +37,7 @@ const ProtectedRoute = () => {
     );
   }
 
-  if (!accessToken) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <Outlet></Outlet>;
+  return accessToken ? <Outlet></Outlet> : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;

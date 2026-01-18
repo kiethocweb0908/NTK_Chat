@@ -59,3 +59,28 @@ export const formatMessageTime = (date: Date) => {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${timeStr}`; // ví dụ: "15/12/2023 18:40"
   }
 };
+
+export const getChatTimestampLabel = (date: Date) => {
+  const now = new Date();
+  const messageDate = new Date(date);
+
+  // Xóa giờ phút giây để chỉ so sánh ngày
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const targetDate = new Date(
+    messageDate.getFullYear(),
+    messageDate.getMonth(),
+    messageDate.getDate()
+  );
+
+  if (targetDate.getTime() === today.getTime()) {
+    return 'Hôm nay';
+  } else if (targetDate.getTime() === yesterday.getTime()) {
+    return 'Hôm qua';
+  } else {
+    // Nếu cũ hơn thì hiện ngày/tháng/năm
+    return targetDate.toLocaleDateString('vi-VN');
+  }
+};

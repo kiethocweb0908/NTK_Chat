@@ -13,7 +13,7 @@ interface ChatCardProps {
   leftSection: React.ReactNode;
   subtitle: React.ReactNode;
 }
-console.log('ChatCard Rendering...');
+
 const ChatCard = ({
   convoId,
   name,
@@ -25,7 +25,6 @@ const ChatCard = ({
   leftSection,
   subtitle,
 }: ChatCardProps) => {
-  console.log('chatCard');
   return (
     <Card
       key={convoId}

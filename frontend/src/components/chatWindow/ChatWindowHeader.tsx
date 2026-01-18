@@ -1,17 +1,18 @@
 import { useChatStore } from '@/stores/useChatStore';
 import type { IConversation } from '@/types/chat';
-import React from 'react';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Separator } from '@radix-ui/react-separator';
 import UserAvatar from '../chat/UserAvatar';
 import StatusBadge from '../chat/StatusBadge';
 import GroupChatAvatar from '../chat/GroupChatAvatar';
+import { useSocketStore } from '@/stores/useSocketStore';
 
 const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
   const conversations = useChatStore((s) => s.conversations);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const user = useAuthStore((s) => s.user);
+  const onlineUsers = useSocketStore((s) => s.onlineUsers);
 
   chat = chat ?? conversations.find((c) => c._id === activeConversationId);
 
@@ -29,6 +30,7 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
 
   let name = '';
   let avatarUrl = null;
+  let otherUserId = '';
 
   if (chat.type === 'direct') {
     const otherUser = chat.participants.find((p) => p._id !== user?._id);
@@ -36,6 +38,7 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
 
     name = otherUser.displayName ?? 'Người dùng';
     avatarUrl = otherUser.avatarUrl;
+    otherUserId = otherUser._id;
   }
 
   if (chat.type === 'group') {
@@ -45,6 +48,7 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
   if (chat.type === 'self') {
     name = 'Ghi chú của tôi';
     avatarUrl = chat.participants[0].avatarUrl;
+    otherUserId = chat.participants[0]._id;
   }
 
   return (
@@ -67,7 +71,9 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
                   avatarUrl={avatarUrl || undefined}
                 />
                 {/* todo: socket io */}
-                <StatusBadge status="offline" />
+                <StatusBadge
+                  status={onlineUsers.includes(otherUserId) ? 'online' : 'offline'}
+                />
               </>
             ) : (
               <GroupChatAvatar participants={chat.participants} type="header" />

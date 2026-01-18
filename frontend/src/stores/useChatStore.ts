@@ -3,11 +3,12 @@ import type { IChatState } from '@/types/stores';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './useAuthStore';
+import type { IConversation, IMessage } from '@/types/chat';
 
 export const useChatStore = create<IChatState>()(
   persist(
     (set, get) => ({
-      conversations: [],
+      conversations: [] as IConversation[],
       messages: {},
       activeConversationId: null,
       convoLoading: false,
@@ -22,6 +23,7 @@ export const useChatStore = create<IChatState>()(
           convoLoading: false,
         });
       },
+      // Lấy danh sách cuộc trò chuyện
       fetchConversations: async () => {
         try {
           set({ convoLoading: true });
@@ -34,6 +36,7 @@ export const useChatStore = create<IChatState>()(
           throw error;
         }
       },
+      // Lấy tin nhắn
       fetchMessages: async (conversationId) => {
         const { activeConversationId, messages } = get();
         const { user } = useAuthStore.getState();
@@ -81,6 +84,100 @@ export const useChatStore = create<IChatState>()(
         } finally {
           set({ messageLoading: false });
         }
+      },
+      // Gửi tin 1-1
+      sendDirectMessage: async (data) => {
+        try {
+          // set({ messageLoading: true });
+
+          const { activeConversationId } = get();
+          const res = await chatSerivce.sendDirecMessage(data);
+
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c._id === activeConversationId ? { ...c, seenBy: [] } : c
+            ),
+          }));
+        } catch (error) {
+          console.error('Store sendDirectMessage Error:', error);
+          throw error;
+        } finally {
+          // set({ messageLoading: false });
+        }
+      },
+      // Gửi tin group
+      sendGroupMessage: async (data) => {
+        try {
+          // set({ messageLoading: true });
+          const { activeConversationId } = get();
+          const user = useAuthStore.getState().user;
+          if (!user) return;
+          await chatSerivce.sendGroupMessage(data);
+
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c._id === activeConversationId
+                ? {
+                    ...c,
+                    seenBy: [
+                      {
+                        _id: user?._id,
+                        displayName: user?.displayName,
+                        avatarUrl: user?.avatarUrl ?? null,
+                      },
+                    ],
+                  }
+                : c
+            ),
+          }));
+        } catch (error) {
+          console.error('Store sendGroupMessage Error:', error);
+          throw error;
+        } finally {
+          // set({ messageLoading: false });
+        }
+      },
+      addMessage: async (message) => {
+        try {
+          const user = useAuthStore.getState().user;
+          const { fetchMessages } = get();
+
+          message.isOwn = message.senderId === user?._id;
+
+          const convoId = message.conversationId;
+
+          let prevItems = get().messages[convoId]?.items ?? [];
+
+          if (prevItems.length === 0) {
+            await fetchMessages(convoId);
+            prevItems = get().messages[convoId]?.items ?? [];
+          }
+
+          set((state) => {
+            if (prevItems.some((m) => m._id === message._id)) {
+              return state;
+            }
+            return {
+              messages: {
+                ...state.messages,
+                [convoId]: {
+                  items: [...prevItems, message],
+                  hasMore: state.messages[convoId].hasMore,
+                  nextCursor: state.messages[convoId].nextCursor ?? undefined,
+                },
+              },
+            };
+          });
+        } catch (error) {
+          console.error('Store addMessage Error:', error);
+        }
+      },
+      updateConversation: (updatedConversation) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === updatedConversation._id ? { ...c, ...updatedConversation } : c
+          ),
+        }));
       },
     }),
     {

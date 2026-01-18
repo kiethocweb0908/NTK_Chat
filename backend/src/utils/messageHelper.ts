@@ -1,7 +1,8 @@
 import mongoose, { HydratedDocument } from 'mongoose';
-import { IConversation } from '../models/Conversation.model';
+import Conversation, { IConversation } from '../models/Conversation.model';
 import Message, { IMessage } from '../models/Message.model';
 import Friend from '../models/Friend.model';
+import { Server } from 'socket.io';
 
 // cập nhật hội thoại khi có tin mới
 export const updateConversationAfterCreateMessage = (
@@ -12,8 +13,8 @@ export const updateConversationAfterCreateMessage = (
   const lastContent = message.content
     ? message.content
     : message.images && message.images.length > 0
-    ? '[Hình ảnh]'
-    : '';
+      ? '[Hình ảnh]'
+      : '';
 
   conversation.set({
     seenBy: [senderId],
@@ -74,4 +75,20 @@ export const checkMessageSpamLimit = async (
   }
 
   return { allowed: true };
+};
+
+export const emitNewMessage = (
+  io: Server,
+  conversation: HydratedDocument<IConversation>,
+  message: HydratedDocument<IMessage>
+) => {
+  io.to(conversation._id.toString()).emit('new-message', {
+    message,
+    conversation: {
+      _id: conversation._id,
+      lastMessage: conversation.lastMessage,
+      lastMessageAt: conversation.lastMessageAt,
+    },
+    unreadCounts: conversation.unreadCounts,
+  });
 };

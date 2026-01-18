@@ -2,6 +2,11 @@ import type { SignInFormValues, SignUpApiRequest } from '@/schemas/auth.schema';
 import type { IUser } from './user';
 import type { ISignInResponse, ISignUpResponse } from './auth';
 import type { IConversation, IMessage } from './chat';
+import type {
+  sendDirectMessageRequest,
+  sendGroupMessageRequest,
+} from '@/schemas/message.schema';
+import type { Socket } from 'socket.io-client';
 
 export interface IAuthStore {
   accessToken: string | null;
@@ -42,4 +47,15 @@ export interface IChatState {
   setActiveConversation: (id: string | null) => void;
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId?: string) => Promise<void>;
+  sendDirectMessage: (data: sendDirectMessageRequest) => Promise<void>;
+  sendGroupMessage: (data: sendGroupMessageRequest) => Promise<void>;
+  addMessage: (message: IMessage) => Promise<void>;
+  updateConversation: (conversation: IConversation) => void;
+}
+
+export interface ISocketState {
+  socket: Socket | null;
+  onlineUsers: string[];
+  connectSocket: () => void;
+  disconnectSocket: () => void;
 }
