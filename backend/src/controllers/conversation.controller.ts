@@ -6,7 +6,6 @@ import {
 } from '../validators/conversation.validator';
 import * as conversationService from '../services/conversation.service';
 import { HTTPSTATUS } from '../config/http.config';
-import Conversation from '../models/Conversation.model';
 
 // tạo group
 export const createGroup = asyncHandler(async (req: Request, res: Response) => {
@@ -69,6 +68,7 @@ export const getMessages = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// lấy danh sách cuộc trò chuyện cho socket.io
 export const getUserConversationsForSocketIO = async (userId: string) => {
   try {
     const conversations =
@@ -79,3 +79,15 @@ export const getUserConversationsForSocketIO = async (userId: string) => {
     return [];
   }
 };
+
+export const markAsSeen = asyncHandler(async (req: Request, res: Response) => {
+  const { conversationId } = req.params;
+  const userId = req.user._id.toString();
+
+  const data = await conversationService.markAsSeenService(
+    conversationId.toString(),
+    userId
+  );
+
+  res.status(HTTPSTATUS.OK).json(data);
+});

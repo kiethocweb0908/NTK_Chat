@@ -9,7 +9,7 @@ interface ILastMessage {
   _id: string;
   content?: string | null;
   createdAt?: string | null;
-  senderId: {
+  sender: {
     _id: string;
     displayName: string;
     avatarUrl?: string | null;

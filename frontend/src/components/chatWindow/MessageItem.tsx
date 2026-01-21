@@ -16,6 +16,29 @@ interface IMessageItemProps {
   lastMessageStatus: 'delivered' | 'seen';
 }
 
+const renderContentWithLargeEmojis = (content: string) => {
+  if (!content) return null;
+
+  // Regex này tìm các emoji (bao gồm cả các emoji phức tạp)
+  const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+
+  // Tách chuỗi thành mảng, giữ lại cả emoji để map
+  const parts = content.split(emojiRegex);
+
+  return parts.map((part, index) => {
+    // Kiểm tra xem mảnh này có phải là emoji không
+    if (emojiRegex.test(part)) {
+      return (
+        <span key={index} className="text-2xl inline-block align-middle mx-0.5">
+          {part}
+        </span>
+      );
+    }
+    // Nếu là chữ bình thường
+    return <span key={index}>{part}</span>;
+  });
+};
+
 const MessageItem = memo(
   ({
     message,
@@ -27,7 +50,7 @@ const MessageItem = memo(
     senderAvatar,
     lastMessageStatus,
   }: IMessageItemProps) => {
-    console.log('message.isOwn: ', message.isOwn);
+    // console.log('message.isOwn: ', message.isOwn);
 
     return (
       <div
@@ -69,7 +92,9 @@ const MessageItem = memo(
                 {senderName}
               </p>
             )}
-            <p className="text-sm leading-relaxed wrap-break-word">{message.content}</p>
+            <p className="text-sm leading-relaxed wrap-break-word flex items-end">
+              {renderContentWithLargeEmojis(message.content || '')}
+            </p>
           </Card>
 
           {/* time */}

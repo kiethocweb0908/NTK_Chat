@@ -5,14 +5,37 @@ import { SidebarInset } from '../ui/sidebar';
 import ChatWindowHeader from '../chatWindow/ChatWindowHeader';
 import ChatWindowBody from '../chatWindow/ChatWindowBody';
 import MessageInput from '../chatWindow/MessageInput';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const ChatWindowLayout = () => {
-  const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const conversations = useChatStore((s) => s.conversations);
+  // const activeConversationId = useChatStore((s) => s.activeConversationId);
   const messageLoading = useChatStore((s) => s.messageLoading);
-  const messages = useChatStore((s) => s.messages);
+  // const messages = useChatStore((s) => s.messages);
+  const markAsSeen = useChatStore((s) => s.markAsSeen);
+  const selectedConvo = useChatStore(
+    (s) => s.conversations.find((c) => c._id === s.activeConversationId) ?? null
+  );
 
-  const selectedConvo = conversations.find((c) => c._id === activeConversationId) ?? null;
+  // const selectedConvo = conversations.find((c) => c._id === activeConversationId) ?? null;
+
+  useEffect(() => {
+    if (!selectedConvo) return;
+
+    const myId = useAuthStore.getState().user?._id;
+    const hasUnread = selectedConvo.unreadCounts[myId!] > 0;
+
+    if (!hasUnread) return;
+
+    const markSeen = async () => {
+      try {
+        await markAsSeen();
+      } catch (error) {
+        console.error('Lỗi khi markSeen: ', error);
+      }
+    };
+    markSeen();
+  }, [markAsSeen, selectedConvo]);
 
   if (!selectedConvo) {
     return <ChatWelcomeScreen />;

@@ -51,6 +51,7 @@ export interface IChatState {
   sendGroupMessage: (data: sendGroupMessageRequest) => Promise<void>;
   addMessage: (message: IMessage) => Promise<void>;
   updateConversation: (conversation: IConversation) => void;
+  markAsSeen: () => Promise<void>;
 }
 
 export interface ISocketState {

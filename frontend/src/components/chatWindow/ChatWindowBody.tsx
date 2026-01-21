@@ -2,100 +2,173 @@ import { useChatStore } from '@/stores/useChatStore';
 import ChatWelcomeScreen from './ChatWelcomeScreen';
 import MessageItem from './MessageItem';
 import type { IParticipant } from '@/types/chat';
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getChatTimestampLabel } from '@/lib/utils';
+import InfiniteScroll from 'react-infinite-scroll-component';
 
 const ChatWindowBody = () => {
+  const fetchMessages = useChatStore((s) => s.fetchMessages);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const conversations = useChatStore((s) => s.conversations);
-  const AllMessages = useChatStore((s) => s.messages);
+  const selectedConvo = useChatStore(
+    (s) => s.conversations.find((c) => c._id === s.activeConversationId) ?? null
+  );
+  const [lastMessageStatus, setLastMessageStatus] = useState<'delivered' | 'seen'>(
+    'delivered'
+  );
+  const messages = useChatStore((s) =>
+    s.activeConversationId ? (s.messages[s.activeConversationId]?.items ?? []) : []
+  );
+  const reversedMessages = [...messages].reverse();
+  const hasMore = useChatStore((s) =>
+    s.activeConversationId ? s.messages[s.activeConversationId]?.hasMore : false
+  );
 
-  const messages = AllMessages[activeConversationId!]?.items ?? [];
-  const selectedConvo = conversations.find((c) => c._id === activeConversationId);
+  // ref
+  const containerRef = useRef<HTMLDivElement>(null);
+  const key = `chat-scroll-${activeConversationId}`;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: 0,
+        behavior: behavior,
+      });
+    }
+  };
+  // cuộn đến cuối khi mở mới
+  // useLayoutEffect(() => {
+  //   // scrollToBottom('auto');
+  //   const container = containerRef.current;
+  //   if (!container || !activeConversationId) return;
+  //   requestAnimationFrame(() => {
+  //     container.scrollTop = 0;
+  //   });
+  // }, [activeConversationId]);
+  // Cuộn khi có tin mới
+  useLayoutEffect(() => {
+    scrollToBottom('smooth');
+  }, [messages]);
+  // lưu vị trí
+  const handleScrollSave = () => {
+    const container = containerRef.current;
+    if (!container || !activeConversationId) return;
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      })
+    );
+  };
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const item = sessionStorage.getItem(key);
+    if (item) {
+      const { scrollTop } = JSON.parse(item);
+      requestAnimationFrame(() => {
+        container.scrollTop = scrollTop;
+      });
+    }
+  }, [messages.length]);
+
+  // đã xem
+  useEffect(() => {
+    const lastMessage = selectedConvo?.lastMessage;
+    if (!lastMessage) return;
+    const seenBy = selectedConvo?.seenBy ?? [];
+    setLastMessageStatus(seenBy.length > 0 ? 'seen' : 'delivered');
+  }, [selectedConvo]);
+
+  // fetch thêm tin nhắn
+  const fetchMoreMessages = async () => {
+    if (!activeConversationId) return;
+    try {
+      await fetchMessages(activeConversationId);
+    } catch (error) {
+      console.error('Lỗi xảy ra khi fetch thông tin: ', error);
+    }
+  };
 
   if (!selectedConvo) return <ChatWelcomeScreen />;
-
   if (!messages?.length) {
     return <div>Chưa có tin nhắn nào trong cuộc trò chuyện này</div>;
   }
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior });
-    }
-  };
-
-  // cuộn đến cuối khi mở mới
-  useEffect(() => {
-    scrollToBottom('auto');
-  }, [activeConversationId]);
-
-  // Cuộn khi có tin mới
-  useEffect(() => {
-    scrollToBottom('smooth');
-  }, [messages]);
-
   return (
     <div className="p-4 bg-primary-foreground h-full flex flex-col overflow-hidden">
-      <div className="flex flex-col overflow-y-auto overflow-x-hidden beautiful-scrollbar">
-        {messages.map((message, index) => {
-          const prev = messages[index - 1];
-          const next = messages[index + 1];
-          const TIME_GAP_LIMIT = 5 * 60 * 1000;
+      <div
+        id="scrollableDiv"
+        ref={containerRef}
+        onScroll={handleScrollSave}
+        className="flex flex-col-reverse overflow-y-auto overflow-x-hidden beautiful-scrollbar"
+      >
+        {/* <div ref={scrollRef} className="h-0 w-0" /> */}
+        <InfiniteScroll
+          dataLength={messages.length}
+          next={fetchMoreMessages}
+          hasMore={hasMore}
+          scrollableTarget="scrollableDiv"
+          loader={<p>Đang tải...</p>}
+          inverse={true}
+          style={{
+            display: 'flex',
+            flexDirection: 'column-reverse',
+            overflow: 'visible',
+          }}
+        >
+          {reversedMessages.map((message, index) => {
+            // Trong mảng đã đảo [Mới nhất (10h) -> Cũ nhất (8h)]:
+            // - newerMsg: index - 1 (về thời gian là sau tin hiện tại)
+            // - olderMsg: index + 1 (về thời gian là trước tin hiện tại)
+            const newerMsg = index > 0 ? reversedMessages[index - 1] : undefined;
+            const olderMsg =
+              index < reversedMessages.length - 1
+                ? reversedMessages[index + 1]
+                : undefined;
 
-          const isGroupBreak =
-            index === 0 ||
-            message.senderId !== prev?.senderId ||
-            new Date(message.createdAt).getTime() -
-              new Date(prev?.createdAt || 0).getTime() >
-              TIME_GAP_LIMIT;
+            const isGroup = selectedConvo.type === 'group';
+            const isLastMessage = message._id === selectedConvo.lastMessage?._id;
+            const participant = selectedConvo.participants.find(
+              (p: IParticipant) => p._id.toString() === message.senderId.toString()
+            );
 
-          const isEndOfGroup =
-            !next ||
-            next.senderId !== message.senderId ||
-            new Date(next.createdAt).getTime() - new Date(message.createdAt).getTime() >
-              TIME_GAP_LIMIT;
+            // LOGIC NGÀY THÁNG: Hiện ngày nếu tin này là tin đầu tiên của ngày đó
+            const isNewDay =
+              !olderMsg ||
+              new Date(message.createdAt).toDateString() !==
+                new Date(olderMsg.createdAt).toDateString();
 
-          const isGroup = selectedConvo.type === 'group';
+            // LOGIC hiện avatar
+            const isGroupBreak =
+              !olderMsg || message.senderId !== olderMsg.senderId || isNewDay;
+            const isEndOfGroup = !newerMsg || newerMsg.senderId !== message.senderId;
 
-          const isLastMessage = message._id === selectedConvo.lastMessage?._id;
+            return (
+              <Fragment key={message._id}>
+                <MessageItem
+                  message={message}
+                  isGroupBreak={isGroupBreak}
+                  isEndOfGroup={isEndOfGroup}
+                  isGroup={isGroup}
+                  isLastMessage={isLastMessage}
+                  senderName={participant?.displayName}
+                  senderAvatar={participant?.avatarUrl}
+                  lastMessageStatus={lastMessageStatus}
+                />
 
-          const participant = selectedConvo.participants.find(
-            (p: IParticipant) => p._id.toString() === message.senderId.toString()
-          );
-
-          const isNewDay =
-            index === 0 ||
-            new Date(message.createdAt).toDateString() !==
-              new Date(prev?.createdAt).toDateString();
-
-          return (
-            <Fragment key={message._id ?? index}>
-              {/* Nếu là ngày mới, hiển thị nhãn thời gian ở giữa */}
-              {isNewDay && (
-                <div className="flex justify-center my-4">
-                  <span className="text-xs text-muted-foreground">
-                    {getChatTimestampLabel(new Date(message.createdAt))}
-                  </span>
-                </div>
-              )}
-
-              <MessageItem
-                message={message}
-                isGroupBreak={isGroupBreak}
-                isEndOfGroup={isEndOfGroup}
-                isGroup={isGroup}
-                isLastMessage={isLastMessage}
-                senderName={participant?.displayName} // Truyền String
-                senderAvatar={participant?.avatarUrl} // Truyền String
-                lastMessageStatus="delivered"
-              />
-            </Fragment>
-          );
-        })}
-        <div ref={scrollRef} className="h-0 w-0" />;
+                {/* Header Ngày tháng: Trong flex-col-reverse, render sau sẽ hiện bên trên */}
+                {isNewDay && (
+                  <div className="flex justify-center my-6">
+                    <span className="text-xs font-medium text-secondary-foreground">
+                      {getChatTimestampLabel(new Date(message.createdAt))}
+                    </span>
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </InfiniteScroll>
       </div>
     </div>
   );

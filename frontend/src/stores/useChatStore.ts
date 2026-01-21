@@ -179,6 +179,31 @@ export const useChatStore = create<IChatState>()(
           ),
         }));
       },
+      markAsSeen: async () => {
+        try {
+          const { user } = useAuthStore.getState();
+          const { activeConversationId, conversations } = get();
+
+          if (!activeConversationId || !user) return;
+
+          const convo = conversations.find((c) => c._id === activeConversationId);
+          if (!convo) return;
+
+          if ((convo.unreadCounts?.[user._id] ?? 0) === 0) return;
+
+          await chatSerivce.markAsSeen(activeConversationId);
+
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c._id === activeConversationId
+                ? { ...c, unreadCounts: { ...c.unreadCounts, [user._id]: 0 } }
+                : c
+            ),
+          }));
+        } catch (error) {
+          console.error('Store markAsSeen Error:', error);
+        }
+      },
     }),
     {
       name: 'chat-storage',

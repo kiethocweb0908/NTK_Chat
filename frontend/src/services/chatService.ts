@@ -5,7 +5,7 @@ import type {
   sendGroupMessageRequest,
 } from '@/schemas/message.schema';
 
-const pageLimit = 50;
+const pageLimit = 15;
 
 export const chatSerivce = {
   async fetchConversations(): Promise<IConversationResponse> {
@@ -30,5 +30,10 @@ export const chatSerivce = {
   async sendGroupMessage(data: sendGroupMessageRequest) {
     const res = await axiosInstance.post(`/message/group`, data);
     return res.data.message;
+  },
+
+  async markAsSeen(conversationId: string) {
+    const res = await axiosInstance.patch(`/conversation/${conversationId}/seen`);
+    return res.data;
   },
 };

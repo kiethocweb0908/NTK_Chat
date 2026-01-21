@@ -13,8 +13,9 @@ export const useAuthStore = create<IAuthStore>()(
 
       clearState: () => {
         set({ accessToken: null, user: null, loading: false });
-        localStorage.clear();
         useChatStore.getState().reset();
+        localStorage.clear();
+        sessionStorage.clear();
       },
 
       setAccessToken: (accessToken) => {
@@ -23,6 +24,7 @@ export const useAuthStore = create<IAuthStore>()(
 
       signUp: async (data) => {
         try {
+          get().clearState();
           set({ loading: true });
           // gọi api
           const res = await authService.signUp(data);

@@ -7,6 +7,9 @@ import UserAvatar from '../chat/UserAvatar';
 import StatusBadge from '../chat/StatusBadge';
 import GroupChatAvatar from '../chat/GroupChatAvatar';
 import { useSocketStore } from '@/stores/useSocketStore';
+import { Ellipsis, Phone, Video } from 'lucide-react';
+import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
   const conversations = useChatStore((s) => s.conversations);
@@ -60,28 +63,50 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
           className="mr-2 data-[orientation=vertical]:h-4"
         />
 
-        <div className="p-2 w-full flex items-center gap-3">
-          {/* avatar */}
-          <div className="relative">
-            {chat.type !== 'group' ? (
-              <>
-                <UserAvatar
-                  type="header"
-                  name={name}
-                  avatarUrl={avatarUrl || undefined}
-                />
-                {/* todo: socket io */}
-                <StatusBadge
-                  status={onlineUsers.includes(otherUserId) ? 'online' : 'offline'}
-                />
-              </>
-            ) : (
-              <GroupChatAvatar participants={chat.participants} type="header" />
-            )}
-          </div>
+        <div className="p-2 w-full flex justify-between items-center gap-3">
+          <div className="flex items-center gap-3">
+            {/* avatar */}
+            <div className="relative">
+              {chat.type !== 'group' ? (
+                <>
+                  <UserAvatar
+                    type="header"
+                    name={name}
+                    avatarUrl={avatarUrl || undefined}
+                  />
+                  {/* todo: socket io */}
+                  <StatusBadge
+                    status={onlineUsers.includes(otherUserId) ? 'online' : 'offline'}
+                  />
+                </>
+              ) : (
+                <GroupChatAvatar participants={chat.participants} type="header" />
+              )}
+            </div>
 
-          {/* name */}
-          <h2 className="font-semibold text-foreground">{name}</h2>
+            {/* name */}
+            <h2 className="font-semibold text-foreground">{name}</h2>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => toast.info('Tính năng này đang được phát triển!')}
+              variant={null}
+            >
+              <Phone className="size-5 text-sent" />
+            </Button>
+            <Button
+              onClick={() => toast.info('Tính năng này đang được phát triển!')}
+              variant={null}
+            >
+              <Video className="size-5 text-sent" />
+            </Button>
+            <Button
+              onClick={() => toast.info('Tính năng này đang được phát triển!')}
+              variant={null}
+            >
+              <Ellipsis className="size-5 text-sent" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

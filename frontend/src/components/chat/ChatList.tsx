@@ -14,7 +14,7 @@ const ChatList = () => {
   const user = useAuthStore((s) => s.user);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
-  const messages = useChatStore((s) => s.messages);
+  // const messages = useChatStore((s) => s.messages);
   const fetchMessages = useChatStore((s) => s.fetchMessages);
   const onlineUsers = useSocketStore((s) => s.onlineUsers);
 
@@ -29,11 +29,12 @@ const ChatList = () => {
   }
 
   const handleSelectConversation = async (id: string) => {
+    const currentMessages = useChatStore.getState().messages;
     if (activeConversationId === id) {
       setActiveConversation(null);
     } else {
       setActiveConversation(id);
-      if (!messages[id]) {
+      if (!currentMessages[id]) {
         // todo: fetch message
         await fetchMessages();
       }
@@ -68,7 +69,7 @@ const ChatList = () => {
 
         const convoId = convo._id;
         // const name = otherUser.displayName ?? 'Người dùng';
-        const lastMessage = convo.lastMessage?.content ?? '';
+        // const lastMessage = convo.lastMessage?.content ?? '';
         const timestamp = convo.lastMessageAt ? new Date(convo.lastMessageAt) : undefined;
         const isActive = activeConversationId === convo._id;
         const unreadCount = convo.unreadCounts[user._id];
@@ -98,6 +99,8 @@ const ChatList = () => {
               unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
             )}
           >
+            {convo.lastMessage?.sender?.displayName}
+            {': '}
             {convo.lastMessage?.content || 'Bắt đầu cuộc trò chuyện'}
           </p>
         );
@@ -110,7 +113,7 @@ const ChatList = () => {
             isActive={isActive}
             unreadCount={unreadCount}
             timestamp={timestamp}
-            lastMessage={lastMessage}
+            // lastMessage={lastMessage}
             onSelect={handleSelectConversation}
             leftSection={leftSection}
             subtitle={subtitle}

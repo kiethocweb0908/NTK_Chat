@@ -38,7 +38,7 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       const lastMessage = {
         _id: conversation.lastMessage._id,
         content: conversation.lastMessage.content,
-        createAt: conversation.lastMessage.createAt,
+        createdAt: conversation.lastMessage.createdAt,
         sender: {
           _id: conversation.lastMessage.senderId,
           displayName: '',
@@ -56,9 +56,28 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
 
       if (useChatStore.getState().activeConversationId === conversation._id) {
         // đánh dáu tin đã đọc
+        useChatStore.getState().markAsSeen();
       }
 
       useChatStore.getState().updateConversation(updatedConversation);
+    });
+
+    // read message
+    socket.on('read-message', ({ conversation, lastMessage }) => {
+      // const updated = {
+      //   _id: conversation._id,
+      //   lastMessage,
+      //   lastMessageAt: conversation.lastMessageAt,
+      //   unreadCounts: conversation.unreadCounts,
+      //   seenBy: conversation.seenBy,
+      // };
+
+      const updated = {
+        ...conversation,
+        lastMessage,
+      };
+
+      useChatStore.getState().updateConversation(updated);
     });
 
     // lỗi kết nối

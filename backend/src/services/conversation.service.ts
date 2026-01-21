@@ -1,13 +1,15 @@
 import path from 'path';
 import Conversation from '../models/Conversation.model';
-import { BadRequestException } from '../utils/app-error';
+import { BadRequestException, NotFoundException } from '../utils/app-error';
 import {
   getMessagesQueryType,
   groupSchemaType,
 } from '../validators/conversation.validator';
 import { IPopulatedParticipant } from '../types/populated.type';
 import Message from '../models/Message.model';
+import { io } from '../socket/index.socket';
 
+// tạo group
 export const createGroupService = async (
   data: groupSchemaType,
   userId: string
@@ -40,6 +42,7 @@ export const createGroupService = async (
   return conversation;
 };
 
+// lấy cuộc trò chuyện với 1 người
 export const getConversationByUserService = async (
   userA: string,
   userB: string
@@ -57,6 +60,7 @@ export const getConversationByUserService = async (
   return conversation;
 };
 
+// lấy danh sách cuộc trò chuyện
 export const getConversationsService = async (userId: string) => {
   const conversations = await Conversation.find({
     'participants.userId': userId,
@@ -88,6 +92,7 @@ export const getConversationsService = async (userId: string) => {
   return formatted;
 };
 
+// lấy tin nhắn của cuộc trò chuyện
 export const getMessagesService = async (data: getMessagesQueryType) => {
   const { conversationId, limit = 50, cursor } = data;
   const query: Record<string, any> = { conversationId };
@@ -114,6 +119,7 @@ export const getMessagesService = async (data: getMessagesQueryType) => {
   return { messages, nextCursor };
 };
 
+// lấy danh sách cuộc trò chuyện cho socket.io
 export const getConversationsForSocketService = async (userId: string) => {
   const conversations = await Conversation.find(
     { 'participants.userId': userId },
@@ -121,4 +127,78 @@ export const getConversationsForSocketService = async (userId: string) => {
   );
 
   return conversations.map((c) => c._id.toString());
+};
+
+//
+export const markAsSeenService = async (
+  conversationId: string,
+  userId: string
+) => {
+  const conversation = await Conversation.findById(conversationId).lean();
+  if (!conversation)
+    throw new NotFoundException('Cuộc trò chuyện không tồn tại');
+
+  const last = conversation.lastMessage;
+  if (!last)
+    return {
+      message: 'Không có tin nhắn để mark as seen',
+      seenBy: [],
+      myUnreadCount: 0,
+    };
+
+  if (last.senderId.toString() === userId)
+    return {
+      message: 'Sender không cần mark as seen',
+      seenBy: [],
+      myUnreadCount: 0,
+    };
+
+  const updated = await Conversation.findByIdAndUpdate(
+    conversationId,
+    {
+      $addToSet: { seenBy: userId },
+      $set: { [`unreadCounts.${userId}`]: 0 },
+    },
+    {
+      new: true,
+    }
+  ).populate([
+    { path: 'participants.userId', select: 'displayName avatarUrl' },
+  ]);
+
+  if (!updated) throw new BadRequestException('updated error');
+
+  const participants: IPopulatedParticipant[] = updated.participants.map(
+    (p: any) => ({
+      _id: p.userId?._id,
+      displayName: p.userId?.displayName,
+      avatarUrl: p.userId?.avatarUrl ?? null,
+      joinedAt: p.joinedAt,
+    })
+  );
+
+  const format = {
+    ...updated.toObject(),
+    participants,
+  };
+
+  console.log('updated: ', format);
+
+  io.to(conversationId).emit('read-message', {
+    conversation: format,
+    lastMessage: {
+      _id: updated?.lastMessage?._id,
+      content: updated?.lastMessage?.content,
+      createdAt: updated?.lastMessage?.createdAt,
+      sender: {
+        _id: updated?.lastMessage?.senderId,
+      },
+    },
+  });
+
+  return {
+    message: 'Mark as seen',
+    seenBy: updated?.seenBy || [],
+    myUnreadCount: updated?.unreadCounts?.get(userId) || 0,
+  };
 };
