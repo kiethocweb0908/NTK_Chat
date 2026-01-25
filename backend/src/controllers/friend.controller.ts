@@ -6,7 +6,6 @@ import {
 } from '../validators/friend.validator';
 import * as friendService from '../services/friend.service';
 import { HTTPSTATUS } from '../config/http.config';
-import Message from '../models/Message.model';
 
 // gửi yêu cầu kết bạn
 export const sendFriendRequest = asyncHandler(
@@ -34,16 +33,9 @@ export const acceptFriendRequest = asyncHandler(
     const userId = req.user?._id;
     console.log('userId: ', userId);
 
-    const from = await friendService.acceptService(requestId, userId);
+    const result = await friendService.acceptService(requestId, userId);
 
-    res.status(HTTPSTATUS.CREATED).json({
-      message: 'Chấp nhận lời mời kết bạn thành công!',
-      newFriend: {
-        _id: from?._id,
-        displayName: from?.displayName,
-        avatarUrl: from?.avatarUrl,
-      },
-    });
+    res.status(HTTPSTATUS.CREATED).json(result);
   }
 );
 
@@ -53,11 +45,27 @@ export const declineFriendRequest = asyncHandler(
     const { requestId } = requestIdSchema.parse(req.params);
     const userId = req.user?._id;
 
-    const displayName = await friendService.declineService(requestId, userId);
+    const result = await friendService.declineService(
+      requestId,
+      userId.toString()
+    );
 
-    res.status(HTTPSTATUS.OK).json({
-      message: `Đã từ chối yêu cầu kết bạn của ${displayName}`,
-    });
+    res.status(HTTPSTATUS.OK).json(result);
+  }
+);
+
+// xoá bạn
+export const deleteFriend = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { targetUserId } = req.params;
+    const userId = req.user?._id;
+
+    const result = await friendService.deleteFriendSerivce(
+      targetUserId.toString(),
+      userId.toString()
+    );
+
+    res.status(HTTPSTATUS.OK).json(result);
   }
 );
 
@@ -79,9 +87,8 @@ export const getFriendRequests = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
 
-    const { sent, received } = await friendService.getFriendRequestsService(
-      userId
-    );
+    const { sent, received } =
+      await friendService.getFriendRequestsService(userId);
 
     res.status(HTTPSTATUS.OK).json({
       message: 'Lấy yêu cầu kết bạn thành công',

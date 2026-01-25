@@ -3,6 +3,14 @@ import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from './useAuthStore';
 import type { ISocketState } from '@/types/stores';
 import { useChatStore } from './useChatStore';
+import { useFriendStore } from './useFriendStore';
+import { toast } from 'sonner';
+import {
+  playDeclineSound,
+  playNotifySound,
+  playSendRequestSound,
+  playSuccessSound,
+} from '@/lib/notificationSound';
 
 const baseURL = import.meta.env.VITE_SOCKET_URL;
 
@@ -60,9 +68,10 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       }
 
       useChatStore.getState().updateConversation(updatedConversation);
+      playNotifySound();
     });
 
-    // read message
+    // xem tin
     socket.on('read-message', ({ conversation, lastMessage }) => {
       // const updated = {
       //   _id: conversation._id,
@@ -78,6 +87,47 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       };
 
       useChatStore.getState().updateConversation(updated);
+    });
+
+    // nhận lời mời kết bạn
+    socket.on('friend-request-received', ({ request }) => {
+      useFriendStore.setState((state) => ({
+        received: [request, ...state.received],
+      }));
+      toast.info(`📩 ${request.from.displayName} gửi lời mời kết bạn`);
+      playSendRequestSound();
+    });
+
+    // huỷ/từ chối kết bạn
+    socket.on('friend-request-decline', ({ message, requestId }) => {
+      useFriendStore.setState((state) => ({
+        sent: state.sent.filter((r) => r._id !== requestId),
+        received: state.received.filter((r) => r._id !== requestId),
+      }));
+      toast.info(`❌ ${message}`);
+      playDeclineSound();
+    });
+
+    // chấp nhận kết bạn
+    socket.on('friend-request-accepted', ({ newFriend, requestId, message }) => {
+      // thêm vào danh sách bạn
+      //...
+
+      useFriendStore.setState((state) => ({
+        sent: state.sent.filter((s) => s._id !== requestId),
+      }));
+
+      toast.info(message);
+      playSuccessSound();
+    });
+
+    // xoá bạn
+    socket.on('friend-delete', ({ message, oldFriend }) => {
+      // cập nhật state bạn bè
+      //...
+
+      toast.info(message);
+      playDeclineSound();
     });
 
     // lỗi kết nối

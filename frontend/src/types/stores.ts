@@ -7,6 +7,17 @@ import type {
   sendGroupMessageRequest,
 } from '@/schemas/message.schema';
 import type { Socket } from 'socket.io-client';
+import type {
+  IDecline,
+  IDeleteFriend,
+  IFirendRequestDecline,
+  IFriendRequestAccept,
+  IFriendRequests,
+  IFriendSendRequest,
+  IReceived,
+  ISearchUserResponse,
+  ISent,
+} from './friend';
 
 export interface IAuthStore {
   accessToken: string | null;
@@ -59,4 +70,17 @@ export interface ISocketState {
   onlineUsers: string[];
   connectSocket: () => void;
   disconnectSocket: () => void;
+}
+
+export interface IFriendState {
+  loading: boolean;
+  sent: ISent[];
+  received: IReceived[];
+  hasFetched: boolean;
+  searchUsers: (keyword: string) => Promise<ISearchUserResponse[]>;
+  sendFriendRequest: (to: string, message?: string) => Promise<IFriendSendRequest>;
+  getFriendRequest: () => Promise<void>;
+  declineFriendRequest: (requestId: string) => Promise<IFirendRequestDecline>;
+  acceptFriendRequest: (requestId: string) => Promise<IFriendRequestAccept>;
+  deleteFriend: (targetUserId: string) => Promise<IDeleteFriend>;
 }

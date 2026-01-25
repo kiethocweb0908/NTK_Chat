@@ -17,7 +17,11 @@ const io = new Server(server, {
 
 io.use(socketAuthMiddleware);
 
-const onlineUsers = new Map(); //{userId, socketId}
+const onlineUsers = new Map<string, string>(); //{userId, socketId}
+
+const getSocketIdByUserId = (userId: string) => {
+  return onlineUsers.get(userId);
+};
 
 io.on('connection', async (socket) => {
   const user = socket.user;
@@ -30,17 +34,17 @@ io.on('connection', async (socket) => {
   const userId = user._id.toString();
   console.log(`${user?.displayName} online với ${socket.id}`);
 
-  onlineUsers.set(user?._id, socket.id);
+  onlineUsers.set(user?._id.toString(), socket.id);
   io.emit('online-users', Array.from(onlineUsers.keys()));
 
   const conversationIds = await getUserConversationsForSocketIO(userId);
   conversationIds.forEach((id) => socket.join(id));
 
   socket.on('disconnect', () => {
-    onlineUsers.delete(user?._id);
+    onlineUsers.delete(user?._id.toString());
     io.emit('online-users', Array.from(onlineUsers.keys()));
     console.log(`socket disconnected: ${socket.id}`);
   });
 });
 
-export { io, server };
+export { io, server, getSocketIdByUserId };

@@ -8,6 +8,7 @@ import { useThemeStore } from './stores/useThemeStore';
 import { useEffect } from 'react';
 import { useAuthStore } from './stores/useAuthStore';
 import { useSocketStore } from './stores/useSocketStore';
+import { unlockAudio } from './lib/notificationSound';
 
 function App() {
   const isDark = useThemeStore((state) => state.isDark);
@@ -16,10 +17,12 @@ function App() {
   const connectSocket = useSocketStore((state) => state.connectSocket);
   const disconnectSocket = useSocketStore((state) => state.disconnectSocket);
 
+  // theme
   useEffect(() => {
     setTheme(isDark);
   }, [isDark]);
 
+  // kết nối socket
   useEffect(() => {
     if (accessToken) {
       connectSocket();
@@ -27,6 +30,22 @@ function App() {
 
     return () => disconnectSocket();
   }, [accessToken]);
+
+  // âm thanh
+  useEffect(() => {
+    const unlockEvents = ['click', 'touchstart', 'keydown'];
+
+    const handler = () => {
+      unlockAudio();
+      unlockEvents.forEach((event) => window.removeEventListener(event, handler));
+    };
+
+    unlockEvents.forEach((event) => window.addEventListener(event, handler));
+
+    return () => {
+      unlockEvents.forEach((event) => window.removeEventListener(event, handler));
+    };
+  }, []);
 
   return (
     <>

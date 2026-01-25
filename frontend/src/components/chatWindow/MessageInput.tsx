@@ -81,6 +81,7 @@ const MessageInput = ({ selectedConvo }: { selectedConvo: IConversation }) => {
           onKeyDown={handleKeyPress}
           minRows={2}
           maxRows={10}
+          maxLength={700}
           placeholder="Nhập tin nhắn..."
           className="w-full pl-3 pr-12 p-2 bg-secondary border border-secondary-foreground/30  rounded-md 
           transition-smooth beautiful-scrollbar resize-none overflow-y-auto"

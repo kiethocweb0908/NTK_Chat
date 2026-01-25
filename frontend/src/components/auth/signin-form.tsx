@@ -11,7 +11,7 @@ import { Eye, UserRound, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { type SignInFormValues, signInSchema } from '@/schemas/auth.schema';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [isChecked, setIsChecked] = useState(false);
@@ -126,9 +126,9 @@ function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
 
               <div className="text-center text-sm *:[a]:hover:text-primary text-muted-foreground">
                 Chưa có tài khoản?{' '}
-                <a href="/register" className="underline underline-offset-4">
+                <Link to="/register" className="underline underline-offset-4">
                   Đăng ký
-                </a>
+                </Link>
               </div>
             </div>
           </form>

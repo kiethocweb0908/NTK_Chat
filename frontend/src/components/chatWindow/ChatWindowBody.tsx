@@ -126,7 +126,7 @@ const ChatWindowBody = () => {
               index < reversedMessages.length - 1
                 ? reversedMessages[index + 1]
                 : undefined;
-
+            console.log(selectedConvo);
             const isGroup = selectedConvo.type === 'group';
             const isLastMessage = message._id === selectedConvo.lastMessage?._id;
             const participant = selectedConvo.participants.find(

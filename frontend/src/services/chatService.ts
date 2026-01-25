@@ -5,7 +5,7 @@ import type {
   sendGroupMessageRequest,
 } from '@/schemas/message.schema';
 
-const pageLimit = 15;
+const pageLimit = 50;
 
 export const chatSerivce = {
   async fetchConversations(): Promise<IConversationResponse> {

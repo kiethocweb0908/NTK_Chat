@@ -3,8 +3,9 @@ import Friend from '../models/Friend.model';
 import FriendRequest from '../models/FriendRequest.model';
 import { BadRequestException, NotFoundException } from '../utils/app-error';
 import { SendRequestType } from '../validators/friend.validator';
-import mongoose from 'mongoose';
+
 import { IPopulatedFriendship } from '../types/populated.type';
+import { getSocketIdByUserId, io } from '../socket/index.socket';
 
 // gửi lời mời kp
 export const sendRequestService = async (
@@ -45,7 +46,25 @@ export const sendRequestService = async (
     message,
   });
 
-  return request;
+  const populatedRequest = await request.populate([
+    {
+      path: 'to',
+      select: '_id displayName userName avatarUrl',
+    },
+    {
+      path: 'from',
+      select: '_id displayName userName avatarUrl',
+    },
+  ]);
+
+  const receiverSocketId = getSocketIdByUserId(to.toString());
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit('friend-request-received', {
+      request: populatedRequest,
+    });
+  }
+
+  return populatedRequest;
 };
 
 // chấp nhận
@@ -56,18 +75,43 @@ export const acceptService = async (requestId: string, userId: string) => {
   if (request.to.toString() !== userId.toString())
     throw new BadRequestException('Bạn không có quyền chấp nhận lời mời này!');
 
-  const friend = await Friend.create({
-    userA: request.from,
-    userB: userId,
+  const existed = await Friend.findOne({
+    $or: [
+      { userA: request.from, userB: userId },
+      { userA: userId, userB: request.from },
+    ],
   });
 
-  await FriendRequest.findByIdAndDelete(request);
+  if (!existed) {
+    await Friend.create({
+      userA: request.from,
+      userB: userId,
+    });
+  }
+
+  await FriendRequest.findByIdAndDelete(requestId);
 
   const from = await User.findById(request.from)
-    .select('_id displayName avatarUrl')
+    .select('_id displayName userName avatarUrl')
     .lean();
 
-  return from;
+  const to = await User.findById(userId)
+    .select('_id displayName userName avatarUrl')
+    .lean();
+
+  const senderSocketId = getSocketIdByUserId(request.from.toString());
+  if (senderSocketId) {
+    io.to(senderSocketId).emit('friend-request-accepted', {
+      requestId,
+      newFriend: to,
+      message: `${to?.displayName} đã chấp nhận lời mời kết bạn!`,
+    });
+  }
+
+  return {
+    message: 'Chấp nhận lời mời kết bạn thành công!',
+    newFriend: from,
+  };
 };
 
 // từ chối
@@ -75,13 +119,72 @@ export const declineService = async (requestId: string, userId: string) => {
   const request = await FriendRequest.findById(requestId);
   if (!request) throw new BadRequestException('Không tìm thấy lời mời kết bạn');
 
-  if (request.to.toString() !== userId)
-    throw new BadRequestException('Bạn không có quyền từ chối lời mời này!');
+  const isFromMe = request.from.toString() === userId;
+  const isToMe = request.to.toString() === userId;
 
-  await FriendRequest.findByIdAndDelete(request);
+  if (!isFromMe && !isToMe)
+    throw new BadRequestException('Bạn không có quyền hành động!');
 
-  const from = await User.findById(request.from).select('displayName').lean();
-  return from?.displayName;
+  await FriendRequest.findByIdAndDelete(requestId);
+
+  const actorId = isFromMe ? request.from : request.to;
+  const targetUserId = isFromMe ? request.to : request.from;
+
+  const actor = await User.findById(actorId).select('displayName').lean();
+  const target = await User.findById(targetUserId).select('displayName').lean();
+
+  const actionText = isFromMe
+    ? 'đã huỷ lời mời kết bạn'
+    : 'đã từ chối lời mời kết bạn';
+
+  const receiverSocketId = getSocketIdByUserId(targetUserId.toString());
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit('friend-request-decline', {
+      requestId,
+      message: `${actor?.displayName} ${actionText}`,
+    });
+  }
+
+  return {
+    message: `${actionText} với ${target?.displayName}`,
+    targetUserId: targetUserId.toString(),
+  };
+};
+
+export const deleteFriendSerivce = async (
+  targetUserId: string,
+  userId: string
+) => {
+  const existed = await Friend.findOne({
+    $or: [
+      { userA: targetUserId, userB: userId },
+      { userA: userId, userB: targetUserId },
+    ],
+  });
+
+  if (!existed) throw new BadRequestException('Hai người chưa phải là bạn bè');
+
+  await Friend.findByIdAndDelete(existed._id);
+
+  const [me, friend] = await Promise.all([
+    User.findById(userId).select('_id userName displayName avatarUrl').lean(),
+    User.findById(targetUserId)
+      .select('_id userName displayName avatarUrl')
+      .lean(),
+  ]);
+
+  const SocketId = getSocketIdByUserId(targetUserId.toString());
+  if (SocketId) {
+    io.to(SocketId).emit('friend-delete', {
+      oldFriend: me,
+      message: `${me?.displayName} đã xoá bạn bè với bạn 😭`,
+    });
+  }
+
+  return {
+    message: `Đã xoá ${friend?.displayName} khỏi danh sách bạn bè!`,
+    oldFriend: friend,
+  };
 };
 
 // lấy ds bạn

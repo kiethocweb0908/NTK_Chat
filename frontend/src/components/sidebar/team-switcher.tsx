@@ -16,10 +16,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Switch } from '../ui/switch';
 import { useThemeStore } from '@/stores/useThemeStore';
+import { Button } from '../ui/button';
 
 export function TeamSwitcher({
   teams,
@@ -39,6 +41,7 @@ export function TeamSwitcher({
 
   const isDark = useThemeStore((state) => state.isDark);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const { toggleSidebar } = useSidebar();
 
   return (
     <SidebarMenu>
@@ -53,13 +56,19 @@ export function TeamSwitcher({
               "
             >
               <div className="flex items-center w-full">
-                <div
-                  className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square items-center justify-center rounded-lg
+                <div>
+                  <button
+                    onClick={() => {
+                      // onClick?.(event);
+                      toggleSidebar();
+                    }}
+                    className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square items-center justify-center rounded-lg
                 transition-all duration-200
                 size-10!"
-                >
+                  >
+                    <img src="/iconWeb.jpeg" alt="logo" />
+                  </button>
                   {/* <activeTeam.logo className="size-4" /> */}
-                  <img src="/iconWeb.jpeg" alt="logo" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">NTK Chat</span>
