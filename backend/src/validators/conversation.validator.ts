@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import Conversation from '../models/Conversation.model';
 
 export const groupSchema = z
   .object({

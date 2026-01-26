@@ -25,4 +25,19 @@ export const friendService = {
     const res = await axiosInstance.delete(`/friend/${targetUserId}/delete`);
     return res.data;
   },
+  async searchFriends(keyword: string) {
+    const res = await axiosInstance.get(`/friend/search`, {
+      params: { keyword },
+    });
+    return res.data;
+  },
+  async getFriends(limit: number, cursor?: string | null) {
+    const res = await axiosInstance.get(`/friend/`, {
+      params: {
+        limit,
+        cursor: cursor || undefined,
+      },
+    });
+    return res.data;
+  },
 };

@@ -1,9 +1,10 @@
-import { chatSerivce } from '@/services/chatService';
+import { chatService } from '@/services/chatService';
 import type { IChatState } from '@/types/stores';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './useAuthStore';
 import type { IConversation, IMessage } from '@/types/chat';
+import { useSocketStore } from './useSocketStore';
 
 export const useChatStore = create<IChatState>()(
   persist(
@@ -27,7 +28,7 @@ export const useChatStore = create<IChatState>()(
       fetchConversations: async () => {
         try {
           set({ convoLoading: true });
-          const { Conversations } = await chatSerivce.fetchConversations();
+          const { Conversations } = await chatService.fetchConversations();
 
           set({ conversations: Conversations, convoLoading: false });
         } catch (error) {
@@ -53,7 +54,7 @@ export const useChatStore = create<IChatState>()(
         set({ messageLoading: true });
 
         try {
-          const { messages: fetched, cursor } = await chatSerivce.fetchMessages(
+          const { messages: fetched, cursor } = await chatService.fetchMessages(
             convoId,
             nextCursor
           );
@@ -91,7 +92,7 @@ export const useChatStore = create<IChatState>()(
           // set({ messageLoading: true });
 
           const { activeConversationId } = get();
-          const res = await chatSerivce.sendDirecMessage(data);
+          const res = await chatService.sendDirecMessage(data);
 
           set((state) => ({
             conversations: state.conversations.map((c) =>
@@ -112,7 +113,7 @@ export const useChatStore = create<IChatState>()(
           const { activeConversationId } = get();
           const user = useAuthStore.getState().user;
           if (!user) return;
-          await chatSerivce.sendGroupMessage(data);
+          await chatService.sendGroupMessage(data);
 
           set((state) => ({
             conversations: state.conversations.map((c) =>
@@ -191,7 +192,7 @@ export const useChatStore = create<IChatState>()(
 
           if ((convo.unreadCounts?.[user._id] ?? 0) === 0) return;
 
-          await chatSerivce.markAsSeen(activeConversationId);
+          await chatService.markAsSeen(activeConversationId);
 
           set((state) => ({
             conversations: state.conversations.map((c) =>
@@ -202,6 +203,25 @@ export const useChatStore = create<IChatState>()(
           }));
         } catch (error) {
           console.error('Store markAsSeen Error:', error);
+        }
+      },
+      createGroup: async (data) => {
+        try {
+          set({ convoLoading: true });
+
+          const res = await chatService.createGroup(data);
+
+          set((state) => ({
+            conversations: [res.newGroup, ...state.conversations],
+            activeConversationId: res.newGroup._id,
+          }));
+
+          return res.message;
+        } catch (error) {
+          console.log('Store createGroup Error:', error);
+          throw error;
+        } finally {
+          set({ convoLoading: false });
         }
       },
     }),

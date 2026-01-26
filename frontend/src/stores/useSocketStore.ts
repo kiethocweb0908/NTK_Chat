@@ -94,16 +94,26 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       useFriendStore.setState((state) => ({
         received: [request, ...state.received],
       }));
+
+      // cập nhật nếu đang trong tìm kiếm
+      useFriendStore
+        .getState()
+        .updateUserRelationship(request.from._id, 'received', request._id);
+
       toast.info(`📩 ${request.from.displayName} gửi lời mời kết bạn`);
       playSendRequestSound();
     });
 
     // huỷ/từ chối kết bạn
-    socket.on('friend-request-decline', ({ message, requestId }) => {
+    socket.on('friend-request-decline', ({ message, requestId, actorId }) => {
       useFriendStore.setState((state) => ({
         sent: state.sent.filter((r) => r._id !== requestId),
         received: state.received.filter((r) => r._id !== requestId),
       }));
+
+      // cập nhật khi đang tìm kiếm
+      useFriendStore.getState().updateUserRelationship(actorId, 'none', undefined);
+
       toast.info(`❌ ${message}`);
       playDeclineSound();
     });
@@ -111,11 +121,15 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
     // chấp nhận kết bạn
     socket.on('friend-request-accepted', ({ newFriend, requestId, message }) => {
       // thêm vào danh sách bạn
-      //...
-
       useFriendStore.setState((state) => ({
+        friends: [newFriend, ...state.friends],
         sent: state.sent.filter((s) => s._id !== requestId),
       }));
+
+      // cập nhật khi đang tìm kiếm
+      useFriendStore
+        .getState()
+        .updateUserRelationship(newFriend._id, 'friend', undefined);
 
       toast.info(message);
       playSuccessSound();
@@ -124,10 +138,41 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
     // xoá bạn
     socket.on('friend-delete', ({ message, oldFriend }) => {
       // cập nhật state bạn bè
-      //...
+      useFriendStore.setState((prev) => ({
+        friends: prev.friends.filter((f) => f._id !== oldFriend._id),
+      }));
+
+      // cập nhật khi đang tìm kiếm
+      useFriendStore.getState().updateUserRelationship(oldFriend._id, 'none', undefined);
 
       toast.info(message);
       playDeclineSound();
+    });
+
+    // tạo group
+    socket.on('group-created', (newConversation) => {
+      // 1. Lấy trạng thái hiện tại từ ChatStore
+      const { conversations } = useChatStore.getState();
+      const currentUserId = useAuthStore.getState().user?._id;
+
+      // 2. KIỂM TRA TRÙNG LẶP: Nếu ID đã tồn tại trong mảng thì dừng luôn
+      const isAlreadyExisted = conversations.some((c) => c._id === newConversation._id);
+
+      if (isAlreadyExisted) {
+        console.log('Conversation đã tồn tại, bỏ qua cập nhật Socket.');
+        return;
+      }
+
+      // 3. THÊM VÀO UI: Nếu chưa có thì mới đưa lên đầu danh sách
+      useChatStore.setState((state) => ({
+        conversations: [newConversation, ...state.conversations],
+      }));
+
+      // 4. THÔNG BÁO: Chỉ báo cho người được mời (không báo cho người vừa bấm nút Tạo)
+      if (newConversation.group?.createdBy !== currentUserId) {
+        toast.info(`Bạn đã được thêm vào nhóm: ${newConversation.group.name}`);
+        playSuccessSound();
+      }
     });
 
     // lỗi kết nối

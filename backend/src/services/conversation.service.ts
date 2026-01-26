@@ -7,7 +7,7 @@ import {
 } from '../validators/conversation.validator';
 import { IPopulatedParticipant } from '../types/populated.type';
 import Message from '../models/Message.model';
-import { io } from '../socket/index.socket';
+import { getSocketIdByUserId, io } from '../socket/index.socket';
 
 // tạo group
 export const createGroupService = async (
@@ -19,7 +19,7 @@ export const createGroupService = async (
   const conversation = new Conversation({
     type: 'group',
     participants: [
-      { userId, joijoinedAtnAt: new Date() },
+      { userId, joinedAt: new Date() },
       ...memberIds.map((id) => ({ userId: id, joinedAt: new Date() })),
     ],
     group: {
@@ -34,10 +34,17 @@ export const createGroupService = async (
     throw new BadRequestException('Có lỗi xảy ra, hộp thoại chưa được tạo');
 
   await conversation.populate([
-    { path: 'participants.userId', select: 'displayName avatarUrl' },
-    { path: 'seenBy', select: 'displayName avatarUrl' },
-    { path: 'lastMessage.senderId', select: 'displayName avatarUrl' },
+    { path: 'participants.userId', select: '_id displayName avatarUrl' },
+    { path: 'seenBy', select: '_id displayName avatarUrl' },
+    { path: 'lastMessage.senderId', select: '_id displayName avatarUrl' },
   ]);
+
+  for (const member of memberIds) {
+    const socketId = getSocketIdByUserId(member.toString());
+    if (socketId) {
+      io.to(socketId).emit('group-created', conversation);
+    }
+  }
 
   return conversation;
 };

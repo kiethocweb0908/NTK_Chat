@@ -3,9 +3,10 @@ import {
   sendFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
-  getAllFriends,
   getFriendRequests,
   deleteFriend,
+  getFriends,
+  searchFriends,
 } from '../controllers/friend.controller';
 
 const friendRoutes = Router()
@@ -13,7 +14,8 @@ const friendRoutes = Router()
   .post('/requests/:requestId/accept', acceptFriendRequest)
   .post('/requests/:requestId/decline', declineFriendRequest)
   .delete('/:targetUserId/delete', deleteFriend)
-  .get('/', getAllFriends)
-  .get('/requests', getFriendRequests);
+  .get('/requests', getFriendRequests)
+  .get('/', getFriends)
+  .get(`/search`, searchFriends);
 
 export default friendRoutes;

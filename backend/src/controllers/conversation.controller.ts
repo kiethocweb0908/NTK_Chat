@@ -18,7 +18,7 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
   );
 
   return res.status(HTTPSTATUS.CREATED).json({
-    conversation,
+    newGroup: conversation,
   });
 });
 

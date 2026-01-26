@@ -13,12 +13,13 @@ import UserAvatar from '../chat/UserAvatar';
 import { useEffect, useState } from 'react';
 import { useFriendStore } from '@/stores/useFriendStore';
 import AddFriendActions from './AddFriendActions';
-import type { ISearchUserResponse } from '@/types/friend';
 import { toast } from 'sonner';
 import { Badge } from '../ui/badge';
 
 const AddFriendTab = () => {
   const searchUsers = useFriendStore((s) => s.searchUsers);
+  const users = useFriendStore((s) => s.users);
+  const clearUsers = useFriendStore((s) => s.clearUsers);
   const sendFriendRequest = useFriendStore((s) => s.sendFriendRequest);
   const declineFriendRequest = useFriendStore((s) => s.declineFriendRequest);
   const acceptFriendRequest = useFriendStore((s) => s.acceptFriendRequest);
@@ -29,7 +30,6 @@ const AddFriendTab = () => {
   const hasFetched = useFriendStore((s) => s.hasFetched);
 
   const [keyword, setKeyword] = useState('');
-  const [users, setUsers] = useState<ISearchUserResponse[]>([]);
 
   useEffect(() => {
     if (!hasFetched) {
@@ -40,82 +40,58 @@ const AddFriendTab = () => {
   // search
   useEffect(() => {
     if (!keyword.trim()) {
-      setUsers([]);
+      clearUsers();
       return;
     }
 
     const timeout = setTimeout(async () => {
-      try {
-        const res = await searchUsers(keyword.trim());
-        setUsers(res);
-      } catch {
-        setUsers([]);
-      }
+      await searchUsers(keyword.trim());
     }, 300);
 
     return () => clearTimeout(timeout);
   }, [keyword, searchUsers]);
 
   const handleSendRequest = async (to: string) => {
-    const res = await sendFriendRequest(to);
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u._id === to ? { ...u, relationship: 'sent', requestId: res.request._id } : u
-      )
-    );
-
-    toast.success(res.message);
+    try {
+      const message = await sendFriendRequest(to);
+      toast.success(message);
+    } catch (error: any) {
+      // Nếu store của bạn throw error, nó sẽ nhảy vào đây
+      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
+      toast.error(errorMsg);
+    }
   };
 
-  const handleAccept = async (requestId: string | undefined) => {
+  const handleAccept = async (requestId?: string) => {
     if (!requestId) return;
-    const res = await acceptFriendRequest(requestId);
-
-    if (users.length) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === res.newFriend._id
-            ? { ...u, relationship: 'friend', requestId: undefined }
-            : u
-        )
-      );
+    try {
+      const res = await acceptFriendRequest(requestId);
+      toast.success(res);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
+      toast.error(errorMsg);
     }
-
-    toast.success(res.message);
   };
 
-  const handleDecline = async (resquestId: string | undefined) => {
+  const handleDecline = async (resquestId?: string) => {
     if (!resquestId) return;
-    const res = await declineFriendRequest(resquestId);
-
-    if (users.length) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === res.targetUserId
-            ? { ...u, relationship: 'none', requestId: undefined }
-            : u
-        )
-      );
+    try {
+      const res = await declineFriendRequest(resquestId);
+      toast.success(res);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
+      toast.error(errorMsg);
     }
-
-    toast.success(res.message);
   };
 
   const handleDelete = async (targetUserId: string) => {
-    const res = await deleteFriend(targetUserId);
-
-    if (users.length) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === res.oldFriend._id
-            ? { ...u, relationship: 'none', requestId: undefined }
-            : u
-        )
-      );
+    try {
+      const res = await deleteFriend(targetUserId);
+      toast.success(res);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
+      toast.error(errorMsg);
     }
-
-    toast.success(res.message);
   };
 
   return (

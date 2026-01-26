@@ -15,6 +15,7 @@ const RequestSentTab = ({ cancel }: IRequestSentTab) => {
         sent.map((s) => {
           return (
             <div
+              key={s._id}
               className="flex items-center gap-4 py-2
             hover:bg-secondary"
             >

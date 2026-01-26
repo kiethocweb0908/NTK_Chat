@@ -7,6 +7,10 @@ export interface ISearchUserResponse extends IUser {
   requestId?: string;
 }
 
+export interface IFriend extends IUser {
+  friendshipId: string;
+}
+
 export interface ISent {
   _id: string;
   from: string;

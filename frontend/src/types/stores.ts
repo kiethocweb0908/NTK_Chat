@@ -11,6 +11,7 @@ import type {
   IDecline,
   IDeleteFriend,
   IFirendRequestDecline,
+  IFriend,
   IFriendRequestAccept,
   IFriendRequests,
   IFriendSendRequest,
@@ -18,6 +19,7 @@ import type {
   ISearchUserResponse,
   ISent,
 } from './friend';
+import type { CreateGroupType } from '@/schemas/conversation';
 
 export interface IAuthStore {
   accessToken: string | null;
@@ -63,6 +65,7 @@ export interface IChatState {
   addMessage: (message: IMessage) => Promise<void>;
   updateConversation: (conversation: IConversation) => void;
   markAsSeen: () => Promise<void>;
+  createGroup: (data: CreateGroupType) => Promise<string>;
 }
 
 export interface ISocketState {
@@ -77,10 +80,27 @@ export interface IFriendState {
   sent: ISent[];
   received: IReceived[];
   hasFetched: boolean;
-  searchUsers: (keyword: string) => Promise<ISearchUserResponse[]>;
-  sendFriendRequest: (to: string, message?: string) => Promise<IFriendSendRequest>;
+  users: ISearchUserResponse[];
+
+  friends: IFriend[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  isSearchingFriends: boolean;
+
+  clearUsers: () => void;
+  clearFriend: () => void;
+
+  updateUserRelationship: (
+    userId: string,
+    relationship: 'none' | 'sent' | 'received' | 'friend',
+    requestId?: string
+  ) => void;
+  searchUsers: (keyword: string) => Promise<void>;
+  sendFriendRequest: (to: string, message?: string) => Promise<string>;
   getFriendRequest: () => Promise<void>;
-  declineFriendRequest: (requestId: string) => Promise<IFirendRequestDecline>;
-  acceptFriendRequest: (requestId: string) => Promise<IFriendRequestAccept>;
-  deleteFriend: (targetUserId: string) => Promise<IDeleteFriend>;
+  declineFriendRequest: (requestId: string) => Promise<string>;
+  acceptFriendRequest: (requestId: string) => Promise<string>;
+  deleteFriend: (targetUserId: string) => Promise<string>;
+  searchFriends: (keyword: string) => Promise<void>;
+  getFriends: (limit: number, cursor?: string | null) => Promise<void>;
 }

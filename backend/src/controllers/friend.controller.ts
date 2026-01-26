@@ -6,6 +6,7 @@ import {
 } from '../validators/friend.validator';
 import * as friendService from '../services/friend.service';
 import { HTTPSTATUS } from '../config/http.config';
+import { BadRequestException } from '../utils/app-error';
 
 // gửi yêu cầu kết bạn
 export const sendFriendRequest = asyncHandler(
@@ -13,16 +14,13 @@ export const sendFriendRequest = asyncHandler(
     const { to, message } = sendRequestSchema.parse(req.body);
     const from = req.user?._id;
 
-    const request = await friendService.sendRequestService({
+    const result = await friendService.sendRequestService({
       from,
       to,
       message,
     });
 
-    res.status(HTTPSTATUS.CREATED).json({
-      message: 'Đã gửi lời mời kết bạn!',
-      request,
-    });
+    res.status(HTTPSTATUS.CREATED).json(result);
   }
 );
 
@@ -70,13 +68,33 @@ export const deleteFriend = asyncHandler(
 );
 
 // lấy danh sách bạn bè
-export const getAllFriends = asyncHandler(
+export const getFriends = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const limit = Number(req.query.limit) || 20;
+  const cursor = req.query.cursor as string | undefined;
+
+  const result = await friendService.getFriendListService(
+    userId,
+    limit,
+    cursor
+  );
+
+  res.status(HTTPSTATUS.OK).json({
+    message: 'Lấy danh sách bạn bè thành công',
+    ...result,
+  });
+});
+
+// tìm bạn bè
+export const searchFriends = asyncHandler(
   async (req: Request, res: Response) => {
-    const userId = req.user?._id;
-    const friends = await friendService.getAllFriendsService(userId);
+    const userId = req.user!._id;
+    const keyword = req.query.keyword as string;
+
+    const friends = await friendService.searchFriendsService(userId, keyword);
 
     res.status(HTTPSTATUS.OK).json({
-      message: 'Lấy danh sách bạn bè thành công!',
+      message: 'Tìm kiếm bạn bè thành công',
       friends,
     });
   }

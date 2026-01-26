@@ -6,6 +6,7 @@ import { SendRequestType } from '../validators/friend.validator';
 
 import { IPopulatedFriendship } from '../types/populated.type';
 import { getSocketIdByUserId, io } from '../socket/index.socket';
+import mongoose from 'mongoose';
 
 // gửi lời mời kp
 export const sendRequestService = async (
@@ -46,7 +47,7 @@ export const sendRequestService = async (
     message,
   });
 
-  const populatedRequest = await request.populate([
+  const populatedRequest = (await request.populate([
     {
       path: 'to',
       select: '_id displayName userName avatarUrl',
@@ -55,7 +56,7 @@ export const sendRequestService = async (
       path: 'from',
       select: '_id displayName userName avatarUrl',
     },
-  ]);
+  ])) as any;
 
   const receiverSocketId = getSocketIdByUserId(to.toString());
   if (receiverSocketId) {
@@ -64,7 +65,10 @@ export const sendRequestService = async (
     });
   }
 
-  return populatedRequest;
+  return {
+    message: `Đã gửi lời mời kết bạn đến ${populatedRequest.to.displayName}`,
+    request: populatedRequest,
+  };
 };
 
 // chấp nhận
@@ -141,6 +145,7 @@ export const declineService = async (requestId: string, userId: string) => {
   if (receiverSocketId) {
     io.to(receiverSocketId).emit('friend-request-decline', {
       requestId,
+      actorId,
       message: `${actor?.displayName} ${actionText}`,
     });
   }
@@ -188,24 +193,105 @@ export const deleteFriendSerivce = async (
 };
 
 // lấy ds bạn
-export const getAllFriendsService = async (userId: string) => {
-  const friendships = (await Friend.find({
-    $or: [{ userA: userId }, { userB: userId }],
-  })
+export const getFriendListService = async (
+  userId: string,
+  limit = 20,
+  cursor?: string
+) => {
+  const query: any = { $or: [{ userA: userId }, { userB: userId }] };
+  if (cursor) query._id = { $lt: cursor };
+
+  const friendships = await Friend.find(query)
+    .sort({ _id: -1 })
+    .limit(limit + 1)
     .populate([
-      { path: 'userA', select: '_id displayName avatarUrl' },
-      { path: 'userB', select: '_id displayName avatarUrl' },
+      { path: 'userA', select: '_id userName displayName avatarUrl' },
+      { path: 'userB', select: '_id userName displayName avatarUrl' },
     ])
-    .lean()) as unknown as IPopulatedFriendship[];
+    .lean<IPopulatedFriendship[]>();
 
-  if (!friendships) return [];
+  const friends = friendships.map((f) => {
+    const friendInfo =
+      f.userA._id.toString() === userId.toString() ? f.userB : f.userA;
+    return { ...friendInfo, friendshipId: f._id };
+  });
 
-  return friendships
-    .filter((f) => f.userA && f.userB)
-    .map((f) => {
-      const isUserA = f.userA._id.toString() === userId.toString();
-      return isUserA ? f.userB : f.userA;
-    });
+  const hasNextPage = friends.length > limit;
+  if (hasNextPage) friends.pop();
+
+  return {
+    friends,
+    nextCursor: hasNextPage ? friends[friends.length - 1].friendshipId : null,
+    hasNextPage,
+  };
+};
+
+// tìm kiếm bạn bè
+export const searchFriendsService = async (userId: string, keyword: string) => {
+  if (!keyword?.trim()) {
+    throw new BadRequestException('Thiếu từ khóa tìm kiếm');
+  }
+
+  const s = keyword.trim().toLowerCase();
+  const safe = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  return await Friend.aggregate([
+    {
+      $match: {
+        $or: [
+          { userA: new mongoose.Types.ObjectId(userId) },
+          { userB: new mongoose.Types.ObjectId(userId) },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        let: { userA: '$userA', userB: '$userB' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $ne: ['$_id', new mongoose.Types.ObjectId(userId)] },
+                  {
+                    $or: [
+                      { $eq: ['$_id', '$$userA'] },
+                      { $eq: ['$_id', '$$userB'] },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+          {
+            $match: {
+              $or: [
+                { userName: { $regex: `^${safe}$`, $options: 'i' } },
+                { displayName: { $regex: safe, $options: 'i' } },
+              ],
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              userName: 1,
+              displayName: 1,
+              avatarUrl: 1,
+            },
+          },
+        ],
+        as: 'friend',
+      },
+    },
+    { $unwind: '$friend' },
+    {
+      $replaceRoot: {
+        newRoot: { $mergeObjects: ['$friend', { friendshipId: '$_id' }] },
+      },
+    },
+    { $limit: 10 },
+  ]);
 };
 
 // lấy danh sách yêu cầu

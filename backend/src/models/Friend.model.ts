@@ -37,7 +37,13 @@ friendSchema.pre('save', function (next) {
   next();
 });
 
+// Unique Index (chống trùng lặp)
 friendSchema.index({ userA: 1, userB: 1 }, { unique: true });
+// Index cho việc truy vấn từ phía userB (Tránh quét toàn bộ bảng khi userB là người nhận)
+friendSchema.index({ userB: 1 });
+// thường xuyên lấy danh sách bạn bè mới nhất của 1 user
+friendSchema.index({ userA: 1, _id: -1 });
+friendSchema.index({ userB: 1, _id: -1 });
 
 const Friend = mongoose.model('Friend', friendSchema);
 export default Friend;

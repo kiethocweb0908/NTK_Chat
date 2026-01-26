@@ -4,10 +4,11 @@ import type {
   sendDirectMessageRequest,
   sendGroupMessageRequest,
 } from '@/schemas/message.schema';
+import type { CreateGroupType } from '@/schemas/conversation';
 
 const pageLimit = 50;
 
-export const chatSerivce = {
+export const chatService = {
   async fetchConversations(): Promise<IConversationResponse> {
     const res = await axiosInstance.get('/conversation/');
     return res.data;
@@ -34,6 +35,10 @@ export const chatSerivce = {
 
   async markAsSeen(conversationId: string) {
     const res = await axiosInstance.patch(`/conversation/${conversationId}/seen`);
+    return res.data;
+  },
+  async createGroup(data: CreateGroupType) {
+    const res = await axiosInstance.post(`/conversation/add-group`, data);
     return res.data;
   },
 };
