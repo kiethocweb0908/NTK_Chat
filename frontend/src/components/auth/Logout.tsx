@@ -3,15 +3,18 @@ import { Button } from '../ui/button';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { LogOut } from 'lucide-react';
+import { useFriendStore } from '@/stores/useFriendStore';
 
 const Logout = () => {
   const signOut = useAuthStore((state) => state.signOut);
+  const clearFriend = useFriendStore((state) => state.clearFriend);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     toast.promise(signOut(), {
       loading: 'Đang xử lý đăng đăng xuất...',
       success: () => {
+        clearFriend();
         navigate('/login');
         return 'Đăng xuất thành công!';
       },

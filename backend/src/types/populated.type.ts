@@ -12,9 +12,9 @@ export interface IPopulatedFriendship {
   userB: IPopulatedUser;
 }
 
-export interface IPopulatedParticipant {
-  _id: string;
-  displayName: string;
-  avatarUrl?: string | null;
-  joinedAt: Date;
-}
+// export interface IPopulatedParticipant {
+//   _id: string;
+//   displayName: string;
+//   avatarUrl?: string | null;
+//   joinedAt: Date;
+// }

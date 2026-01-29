@@ -1,7 +1,7 @@
 import type { SignInFormValues, SignUpApiRequest } from '@/schemas/auth.schema';
 import type { IUser } from './user';
 import type { ISignInResponse, ISignUpResponse } from './auth';
-import type { IConversation, IMessage } from './chat';
+import type { IConversation, IMessage, IUserpopulate } from './chat';
 import type {
   sendDirectMessageRequest,
   sendGroupMessageRequest,
@@ -55,17 +55,24 @@ export interface IChatState {
   activeConversationId: string | null;
   convoLoading: boolean;
   messageLoading: boolean;
+  tempChatUser: IUserpopulate | null;
+
   reset: () => void;
 
   setActiveConversation: (id: string | null) => void;
+  updateConversation: (conversation: IConversation) => void;
+  moveConversationToTop: (conversationId: string) => void;
+  addConversation: (conversation: IConversation) => void;
+
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId?: string) => Promise<void>;
   sendDirectMessage: (data: sendDirectMessageRequest) => Promise<void>;
   sendGroupMessage: (data: sendGroupMessageRequest) => Promise<void>;
   addMessage: (message: IMessage) => Promise<void>;
-  updateConversation: (conversation: IConversation) => void;
+
   markAsSeen: () => Promise<void>;
   createGroup: (data: CreateGroupType) => Promise<string>;
+  handleStartChat: (targetUserId: string) => Promise<void>;
 }
 
 export interface ISocketState {

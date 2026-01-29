@@ -25,30 +25,23 @@ const CreateGroupTab = ({ onSuccess }: { onSuccess: () => void }) => {
   const createGroup = useChatStore((s) => s.createGroup);
 
   const [keyword, setKeyword] = useState('');
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+
   // gọi api bạn bè
   useEffect(() => {
     if (keyword.trim()) {
       const delayDebounce = setTimeout(() => {
         searchFriends(keyword);
       }, 300);
-
-      console.log(1);
       return () => clearTimeout(delayDebounce);
     }
 
     const fetchInitialFriends = async () => {
       if (friends.length === 0 || isSearchingFriends) {
-        if (isSearchingFriends) {
-          clearFriend();
-        }
-        console.log(2);
-
+        if (isSearchingFriends) clearFriend();
         await getFriends(20);
       }
     };
     fetchInitialFriends();
-    console.log(3);
   }, [keyword]);
 
   // cuộn

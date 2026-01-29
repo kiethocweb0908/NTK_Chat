@@ -181,7 +181,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     group-data-[state=collapsed]:p-0"
           >
             {/* search */}
-            <SearchComponent />
+            <SearchComponent placeholder="Tìm đoạn chat..." />
             {/* create */}
             <CreateComponent />
           </SidebarGroupContent>

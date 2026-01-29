@@ -40,39 +40,30 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
     });
 
     // tin nhắn mới
-    socket.on('new-message', ({ message, conversation, unreadCounts }) => {
-      useChatStore.getState().addMessage(message);
-
-      const lastMessage = {
-        _id: conversation.lastMessage._id,
-        content: conversation.lastMessage.content,
-        createdAt: conversation.lastMessage.createdAt,
-        sender: {
-          _id: conversation.lastMessage.senderId,
-          displayName: '',
-          avatarUrl: null,
-        },
-      };
-
-      const updatedConversation = {
-        ...conversation,
-        lastMessage,
-        unreadCounts,
-      };
+    socket.on('new-message', ({ newMessage, updatedConversation }) => {
+      useChatStore.getState().addMessage(newMessage);
 
       console.log('updatedConversation: ', updatedConversation);
+      const existing = useChatStore
+        .getState()
+        .conversations.some((c) => c._id === updatedConversation._id);
+      if (!existing) {
+        useChatStore.getState().addConversation(updatedConversation);
+      } else {
+        useChatStore.getState().updateConversation(updatedConversation);
+        useChatStore.getState().moveConversationToTop(updatedConversation._id);
+      }
 
-      if (useChatStore.getState().activeConversationId === conversation._id) {
+      if (useChatStore.getState().activeConversationId === updatedConversation._id) {
         // đánh dáu tin đã đọc
         useChatStore.getState().markAsSeen();
       }
 
-      useChatStore.getState().updateConversation(updatedConversation);
       playNotifySound();
     });
 
     // xem tin
-    socket.on('read-message', ({ conversation, lastMessage }) => {
+    socket.on('read-message', ({ updatedConversation }) => {
       // const updated = {
       //   _id: conversation._id,
       //   lastMessage,
@@ -81,12 +72,7 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       //   seenBy: conversation.seenBy,
       // };
 
-      const updated = {
-        ...conversation,
-        lastMessage,
-      };
-
-      useChatStore.getState().updateConversation(updated);
+      useChatStore.getState().updateConversation(updatedConversation);
     });
 
     // nhận lời mời kết bạn
@@ -164,12 +150,12 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       }
 
       // 3. THÊM VÀO UI: Nếu chưa có thì mới đưa lên đầu danh sách
-      useChatStore.setState((state) => ({
-        conversations: [newConversation, ...state.conversations],
-      }));
 
       // 4. THÔNG BÁO: Chỉ báo cho người được mời (không báo cho người vừa bấm nút Tạo)
       if (newConversation.group?.createdBy !== currentUserId) {
+        useChatStore.setState((state) => ({
+          conversations: [newConversation, ...state.conversations],
+        }));
         toast.info(`Bạn đã được thêm vào nhóm: ${newConversation.group.name}`);
         playSuccessSound();
       }

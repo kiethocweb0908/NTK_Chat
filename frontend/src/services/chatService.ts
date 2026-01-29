@@ -41,4 +41,12 @@ export const chatService = {
     const res = await axiosInstance.post(`/conversation/add-group`, data);
     return res.data;
   },
+  async handleStartChat(targetUserId: string) {
+    const res = await axiosInstance.get('/conversation/with-user', {
+      params: {
+        targetUserId,
+      },
+    });
+    return res.data;
+  },
 };

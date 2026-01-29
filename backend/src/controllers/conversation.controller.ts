@@ -18,6 +18,7 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
   );
 
   return res.status(HTTPSTATUS.CREATED).json({
+    message: `Tạo nhóm "${conversation?.group?.name}" thành công!`,
     newGroup: conversation,
   });
 });
@@ -26,16 +27,16 @@ export const createGroup = asyncHandler(async (req: Request, res: Response) => {
 export const getConversationByUser = asyncHandler(
   async (req: Request, res: Response) => {
     const userA = req.user?._id;
-    const userB = req.query.userId as string;
+    const userB = req.query.targetUserId as string;
 
-    const conversation = await conversationService.getConversationByUserService(
+    const result = await conversationService.getConversationByUserService(
       userA,
       userB
     );
 
-    if (!conversation) return res.status(HTTPSTATUS.NO_CONTENT).send();
+    // if (!conversation) return res.status(HTTPSTATUS.NO_CONTENT).send();
 
-    return res.status(HTTPSTATUS.OK).json({ conversation });
+    return res.status(HTTPSTATUS.OK).json(result);
   }
 );
 
@@ -44,9 +45,10 @@ export const getConversations = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
 
-    const formatted = await conversationService.getConversationsService(userId);
+    const conversations =
+      await conversationService.getConversationsService(userId);
 
-    return res.status(HTTPSTATUS.OK).json({ Conversations: formatted });
+    return res.status(HTTPSTATUS.OK).json({ conversations });
   }
 );
 

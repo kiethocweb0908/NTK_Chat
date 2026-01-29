@@ -1,5 +1,5 @@
 import { useChatStore } from '@/stores/useChatStore';
-import type { IConversation } from '@/types/chat';
+import type { IConversation, IUserpopulate } from '@/types/chat';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Separator } from '@radix-ui/react-separator';
@@ -11,15 +11,49 @@ import { Ellipsis, Phone, Video } from 'lucide-react';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 
-const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
+interface IChatWindowHeader {
+  chat: IConversation | null;
+  tempUser: IUserpopulate | null;
+}
+
+const ChatWindowHeader = ({ chat, tempUser }: IChatWindowHeader) => {
   const conversations = useChatStore((s) => s.conversations);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const user = useAuthStore((s) => s.user);
   const onlineUsers = useSocketStore((s) => s.onlineUsers);
 
-  chat = chat ?? conversations.find((c) => c._id === activeConversationId);
+  let name = '';
+  let avatarUrl = null;
+  let otherUserId = '';
+  let isGroup = false;
 
-  if (!chat) {
+  // 2. Nếu là cuộc trò chuyện đã tồn tại
+  if (chat) {
+    isGroup = chat.type === 'group';
+    if (chat.type === 'direct') {
+      const otherUser = chat.participants.find((p) => p.userId._id !== user?._id);
+      name = otherUser?.userId.displayName ?? 'Người dùng';
+      avatarUrl = otherUser?.userId.avatarUrl;
+      otherUserId = otherUser?.userId._id ?? '';
+    } else if (chat.type === 'group') {
+      name = chat.group?.name ? `NHÓM: ${chat.group?.name}` : 'Chưa có tên';
+    } else if (chat.type === 'self') {
+      name = 'Ghi chú của tôi';
+      avatarUrl = chat.participants[0].userId.avatarUrl;
+      otherUserId = chat.participants[0].userId._id;
+    }
+  }
+  // 3. Nếu là người dùng tạm thời (Bấm "Nhắn tin" từ danh sách bạn bè)
+  else if (tempUser) {
+    name = tempUser.displayName ?? 'Người dùng';
+    avatarUrl = tempUser.avatarUrl;
+    otherUserId = tempUser._id;
+    isGroup = false;
+  }
+
+  // if (chat) chat = chat ?? conversations.find((c) => c._id === activeConversationId);
+
+  if (!chat && !tempUser) {
     return (
       <header
         className="md:hidden sticky top-0 z-10 
@@ -31,28 +65,28 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
     );
   }
 
-  let name = '';
-  let avatarUrl = null;
-  let otherUserId = '';
+  // let name = '';
+  // let avatarUrl = null;
+  // let otherUserId = '';
 
-  if (chat.type === 'direct') {
-    const otherUser = chat.participants.find((p) => p._id !== user?._id);
-    if (!user || !otherUser) return;
+  // if (chat.type === 'direct') {
+  //   const otherUser = chat.participants.find((p) => p.userId._id !== user?._id);
+  //   if (!user || !otherUser) return;
 
-    name = otherUser.displayName ?? 'Người dùng';
-    avatarUrl = otherUser.avatarUrl;
-    otherUserId = otherUser._id;
-  }
+  //   name = otherUser.userId.displayName ?? 'Người dùng';
+  //   avatarUrl = otherUser.userId.avatarUrl;
+  //   otherUserId = otherUser.userId._id;
+  // }
 
-  if (chat.type === 'group') {
-    name = chat.group?.name ? `NHÓM: ${chat.group?.name}` : 'chưa có tên';
-  }
+  // if (chat.type === 'group') {
+  //   name = chat.group?.name ? `NHÓM: ${chat.group?.name}` : 'chưa có tên';
+  // }
 
-  if (chat.type === 'self') {
-    name = 'Ghi chú của tôi';
-    avatarUrl = chat.participants[0].avatarUrl;
-    otherUserId = chat.participants[0]._id;
-  }
+  // if (chat.type === 'self') {
+  //   name = 'Ghi chú của tôi';
+  //   avatarUrl = chat.participants[0].userId.avatarUrl;
+  //   otherUserId = chat.participants[0].userId._id;
+  // }
 
   return (
     <header className="sticky top-0 z-10 px-4 py-2 flex items-center bg-background">
@@ -67,7 +101,7 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
           <div className="flex items-center gap-3">
             {/* avatar */}
             <div className="relative">
-              {chat.type !== 'group' ? (
+              {!isGroup ? (
                 <>
                   <UserAvatar
                     type="header"
@@ -80,7 +114,7 @@ const ChatWindowHeader = ({ chat }: { chat?: IConversation }) => {
                   />
                 </>
               ) : (
-                <GroupChatAvatar participants={chat.participants} type="header" />
+                <GroupChatAvatar participants={chat?.participants || []} type="header" />
               )}
             </div>
 

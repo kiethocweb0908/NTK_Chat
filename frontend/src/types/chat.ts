@@ -1,7 +1,12 @@
-export interface IParticipant {
+export interface IUserpopulate {
   _id: string;
+  userName?: string;
   displayName: string;
   avatarUrl?: string | null;
+}
+
+export interface IParticipant {
+  userId: IUserpopulate;
   joinedAt: string;
 }
 
@@ -9,22 +14,12 @@ interface ILastMessage {
   _id: string;
   content?: string | null;
   createdAt?: string | null;
-  sender: {
-    _id: string;
-    displayName: string;
-    avatarUrl?: string | null;
-  };
+  senderId: IUserpopulate;
 }
 
 interface IGroup {
   name: string;
   createdBy: string;
-}
-
-interface ISeenUser {
-  _id: string;
-  displayName?: string;
-  avatarUrl?: string | null;
 }
 
 export interface IConversation {
@@ -36,7 +31,7 @@ export interface IConversation {
   lastMessage?: ILastMessage | null;
   lastMessageAt?: Date;
 
-  seenBy: ISeenUser[];
+  seenBy: IUserpopulate[];
   unreadCounts: Record<string, number>;
 
   createdAt: string;
@@ -44,7 +39,7 @@ export interface IConversation {
 }
 
 export interface IConversationResponse {
-  Conversations: IConversation[];
+  conversations: IConversation[];
 }
 
 interface IImages {

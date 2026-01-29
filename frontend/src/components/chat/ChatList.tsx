@@ -30,6 +30,7 @@ const ChatList = () => {
 
   const handleSelectConversation = async (id: string) => {
     const currentMessages = useChatStore.getState().messages;
+    useChatStore.setState({ tempChatUser: null });
     if (activeConversationId === id) {
       setActiveConversation(null);
     } else {
@@ -48,14 +49,13 @@ const ChatList = () => {
         let name = '';
         let avatarUrl = null;
         let userId = '';
-
         if (convo.type === 'direct') {
-          const otherUser = convo.participants.find((p) => p._id !== user._id);
+          const otherUser = convo.participants.find((p) => p.userId._id !== user._id);
           if (!otherUser) return null;
 
-          name = otherUser.displayName ?? 'Người dùng';
-          avatarUrl = otherUser.avatarUrl;
-          userId = otherUser._id;
+          name = otherUser.userId.displayName ?? 'Người dùng';
+          avatarUrl = otherUser.userId.avatarUrl;
+          userId = otherUser.userId._id;
         }
 
         if (convo.type === 'group') {
@@ -93,16 +93,26 @@ const ChatList = () => {
 
         // 3. Render Subtitle
         const subtitle = (
-          <p
+          <div
             className={cn(
-              'text-xs truncate',
+              'text-xs truncate flex gap-1',
               unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
             )}
           >
-            {convo.lastMessage?.sender?.displayName}
-            {': '}
-            {convo.lastMessage?.content || 'Bắt đầu cuộc trò chuyện'}
-          </p>
+            {convo.lastMessage?.content ? (
+              <>
+                <p className="font-medium">
+                  {convo.lastMessage?.senderId?._id === user._id
+                    ? 'Bạn: '
+                    : convo.lastMessage?.senderId?.displayName?.trim().split(' ').pop() +
+                      ': '}
+                </p>
+                <p>{convo.lastMessage?.content}</p>
+              </>
+            ) : (
+              <p>Bắt đầu cuộc trò chuyện</p>
+            )}
+          </div>
         );
 
         return (

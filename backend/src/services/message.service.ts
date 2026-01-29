@@ -11,7 +11,8 @@ import {
 } from '../utils/messageHelper';
 import { BadRequestException, NotFoundException } from '../utils/app-error';
 import mongoose from 'mongoose';
-import { io } from '../socket/index.socket';
+import { getSocketIdByUserId, io } from '../socket/index.socket';
+import { clearScreenDown } from 'readline';
 
 // gửi tn 1-1
 export const sendDirectService = async (
@@ -72,8 +73,38 @@ export const sendDirectService = async (
   // cập nhật hộp thoại sau khi tạo tin mới
   updateConversationAfterCreateMessage(conversation, message, senderId);
   await conversation.save();
+  await conversation.populate([
+    {
+      path: 'participants.userId',
+      select: '_id userName displayName avatarUrl',
+    },
+    {
+      path: 'lastMessage.senderId',
+      select: '_id userName displayName avatarUrl',
+    },
+    { path: 'seenBy', select: '_id userName displayName avatarUrl' },
+  ]);
 
-  emitNewMessage(io, conversation, message);
+  // emitNewMessage(io, conversation, message);
+
+  if (!conversationId && conversation) {
+    console.log('có vào đây');
+    for (const member of conversation.participants) {
+      const memberId = member.userId._id;
+      const socketId = getSocketIdByUserId(memberId.toString());
+      if (socketId) {
+        const memberSocket = io.sockets.sockets.get(socketId);
+        if (memberSocket) {
+          memberSocket.join(conversation._id.toString());
+        }
+      }
+    }
+  }
+  console.log('Bên ngoài');
+  io.to(conversation._id.toString()).emit('new-message', {
+    newMessage: message,
+    updatedConversation: conversation,
+  });
 
   return message;
 };
@@ -104,8 +135,22 @@ export const sendGroupService = async (
 
   updateConversationAfterCreateMessage(conversation, message, senderId);
   await conversation.save();
+  await conversation.populate([
+    {
+      path: 'participants.userId',
+      select: '_id userName displayName avatarUrl',
+    },
+    {
+      path: 'lastMessage.senderId',
+      select: '_id userName displayName avatarUrl',
+    },
+    { path: 'seenBy', select: '_id userName displayName avatarUrl' },
+  ]);
 
-  emitNewMessage(io, conversation, message);
+  io.to(conversation._id.toString()).emit('new-message', {
+    newMessage: message,
+    updatedConversation: conversation,
+  });
 
   return message;
 };

@@ -72,7 +72,7 @@ export function TeamSwitcher({
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">NTK Chat</span>
-                  <span className="truncate text-xs">trò chuyện mọi nơi</span>
+                  <span className="truncate text-xs">Kết nối không khoảng cách</span>
                 </div>
                 {/* công tắc theme */}
                 <div className="flex items-center gap-2">

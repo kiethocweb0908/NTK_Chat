@@ -5,9 +5,10 @@ import {
   getMessagesQueryType,
   groupSchemaType,
 } from '../validators/conversation.validator';
-import { IPopulatedParticipant } from '../types/populated.type';
+// import { IPopulatedParticipant } from '../types/populated.type';
 import Message from '../models/Message.model';
 import { getSocketIdByUserId, io } from '../socket/index.socket';
+import User from '../models/User.model';
 
 // tạo group
 export const createGroupService = async (
@@ -39,9 +40,14 @@ export const createGroupService = async (
     { path: 'lastMessage.senderId', select: '_id displayName avatarUrl' },
   ]);
 
-  for (const member of memberIds) {
-    const socketId = getSocketIdByUserId(member.toString());
+  for (const member of conversation.participants) {
+    const memberId = member.userId._id;
+    const socketId = getSocketIdByUserId(memberId.toString());
     if (socketId) {
+      const memberSocket = io.sockets.sockets.get(socketId);
+      if (memberSocket) {
+        memberSocket.join(conversation._id.toString());
+      }
       io.to(socketId).emit('group-created', conversation);
     }
   }
@@ -60,11 +66,16 @@ export const getConversationByUserService = async (
     type: isSelf ? 'self' : 'direct',
     participants: { $size: isSelf ? 1 : 2 },
     'participants.userId': isSelf ? userA : { $all: [userA, userB] },
-  });
+  }).populate('participants.userId', '_id userName displayName avatarUrl');
 
-  if (!conversation) return null;
+  if (!conversation) {
+    const targetUser = await User.findById(userB).select(
+      '_id userName displayName avatarUrl'
+    );
+    return { isNew: true, targetUser };
+  }
 
-  return conversation;
+  return { isNew: false, conversation };
 };
 
 // lấy danh sách cuộc trò chuyện
@@ -74,29 +85,35 @@ export const getConversationsService = async (userId: string) => {
   })
     .sort({ lastMessageAt: -1, updatedAt: -1 })
     .populate([
-      { path: 'participants.userId', select: 'displayName avatarUrl' },
-      { path: 'lastMessage.senderId', select: 'displayName avatarUrl' },
-      { path: 'seenBy', select: 'displayName avatarUrl' },
+      {
+        path: 'participants.userId',
+        select: '_id userName displayName avatarUrl',
+      },
+      {
+        path: 'lastMessage.senderId',
+        select: '_id userName displayName avatarUrl',
+      },
+      { path: 'seenBy', select: '_id userName displayName avatarUrl' },
     ]);
 
-  const formatted = conversations.map((conversation) => {
-    const participants: IPopulatedParticipant[] = conversation.participants.map(
-      (p: any) => ({
-        _id: p.userId?._id,
-        displayName: p.userId?.displayName,
-        avatarUrl: p.userId?.avatarUrl ?? null,
-        joinedAt: p.joinedAt,
-      })
-    );
+  // const formatted = conversations.map((conversation) => {
+  //   const participants: IPopulatedParticipant[] = conversation.participants.map(
+  //     (p: any) => ({
+  //       _id: p.userId?._id,
+  //       displayName: p.userId?.displayName,
+  //       avatarUrl: p.userId?.avatarUrl ?? null,
+  //       joinedAt: p.joinedAt,
+  //     })
+  //   );
 
-    return {
-      ...conversation.toObject(),
-      unreadCounts: conversation.unreadCounts || {},
-      participants,
-    };
-  });
+  //   return {
+  //     ...conversation.toObject(),
+  //     unreadCounts: conversation.unreadCounts || {},
+  //     participants,
+  //   };
+  // });
 
-  return formatted;
+  return conversations;
 };
 
 // lấy tin nhắn của cuộc trò chuyện
@@ -160,7 +177,7 @@ export const markAsSeenService = async (
       myUnreadCount: 0,
     };
 
-  const updated = await Conversation.findByIdAndUpdate(
+  const updatedConversation = await Conversation.findByIdAndUpdate(
     conversationId,
     {
       $addToSet: { seenBy: userId },
@@ -170,42 +187,43 @@ export const markAsSeenService = async (
       new: true,
     }
   ).populate([
-    { path: 'participants.userId', select: 'displayName avatarUrl' },
+    {
+      path: 'participants.userId',
+      select: '_id userName displayName avatarUrl',
+    },
+    {
+      path: 'lastMessage.senderId',
+      select: '_id userName displayName avatarUrl',
+    },
+    { path: 'seenBy', select: '_id userName displayName avatarUrl' },
   ]);
 
-  if (!updated) throw new BadRequestException('updated error');
+  if (!updatedConversation) throw new BadRequestException('updated error');
 
-  const participants: IPopulatedParticipant[] = updated.participants.map(
-    (p: any) => ({
-      _id: p.userId?._id,
-      displayName: p.userId?.displayName,
-      avatarUrl: p.userId?.avatarUrl ?? null,
-      joinedAt: p.joinedAt,
-    })
-  );
+  // const participants: IPopulatedParticipant[] = updated.participants.map(
+  //   (p: any) => ({
+  //     _id: p.userId?._id,
+  //     displayName: p.userId?.displayName,
+  //     avatarUrl: p.userId?.avatarUrl ?? null,
+  //     joinedAt: p.joinedAt,
+  //   })
+  // );
 
-  const format = {
-    ...updated.toObject(),
-    participants,
-  };
+  // const format = {
+  //   ...updated.toObject(),
+  //   participants,
+  // };
 
-  console.log('updated: ', format);
+  // console.log('updated: ', format);
 
   io.to(conversationId).emit('read-message', {
-    conversation: format,
-    lastMessage: {
-      _id: updated?.lastMessage?._id,
-      content: updated?.lastMessage?.content,
-      createdAt: updated?.lastMessage?.createdAt,
-      sender: {
-        _id: updated?.lastMessage?.senderId,
-      },
-    },
+    updatedConversation,
   });
 
   return {
     message: 'Mark as seen',
-    seenBy: updated?.seenBy || [],
-    myUnreadCount: updated?.unreadCounts?.get(userId) || 0,
+    // seenBy: updated?.seenBy || [],
+    // myUnreadCount: updated?.unreadCounts?.get(userId) || 0,
+    updatedConversation,
   };
 };

@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './useAuthStore';
 import type { IConversation, IMessage } from '@/types/chat';
-import { useSocketStore } from './useSocketStore';
 
 export const useChatStore = create<IChatState>()(
   persist(
@@ -14,6 +13,7 @@ export const useChatStore = create<IChatState>()(
       activeConversationId: null,
       convoLoading: false,
       messageLoading: false,
+      tempChatUser: null,
 
       setActiveConversation: (id) => set({ activeConversationId: id }),
       reset: () => {
@@ -24,13 +24,40 @@ export const useChatStore = create<IChatState>()(
           convoLoading: false,
         });
       },
+      updateConversation: (updatedConversation) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === updatedConversation._id ? updatedConversation : c
+          ),
+        }));
+      },
+      moveConversationToTop: (conversationId) => {
+        set((state) => {
+          const convoToMove = state.conversations.find((c) => c._id === conversationId);
+          if (!convoToMove) return state;
+
+          const otherConversations = state.conversations.filter(
+            (c) => c._id !== conversationId
+          );
+
+          return {
+            conversations: [convoToMove, ...otherConversations],
+          };
+        });
+      },
+      addConversation: (conversation) => {
+        set((state) => ({
+          conversations: [conversation, ...state.conversations],
+        }));
+      },
+
       // Lấy danh sách cuộc trò chuyện
       fetchConversations: async () => {
         try {
           set({ convoLoading: true });
-          const { Conversations } = await chatService.fetchConversations();
+          const { conversations } = await chatService.fetchConversations();
 
-          set({ conversations: Conversations, convoLoading: false });
+          set({ conversations, convoLoading: false });
         } catch (error) {
           set({ convoLoading: false });
           console.error('Store fetchConversations Error:', error);
@@ -91,7 +118,7 @@ export const useChatStore = create<IChatState>()(
         try {
           // set({ messageLoading: true });
 
-          const { activeConversationId } = get();
+          const { activeConversationId, moveConversationToTop, tempChatUser } = get();
           const res = await chatService.sendDirecMessage(data);
 
           set((state) => ({
@@ -99,6 +126,16 @@ export const useChatStore = create<IChatState>()(
               c._id === activeConversationId ? { ...c, seenBy: [] } : c
             ),
           }));
+
+          if (activeConversationId) {
+            moveConversationToTop(activeConversationId);
+          }
+          if (!activeConversationId && tempChatUser) {
+            set({
+              activeConversationId: res.conversationId,
+              tempChatUser: null,
+            });
+          }
         } catch (error) {
           console.error('Store sendDirectMessage Error:', error);
           throw error;
@@ -123,6 +160,7 @@ export const useChatStore = create<IChatState>()(
                     seenBy: [
                       {
                         _id: user?._id,
+                        userName: user.userName,
                         displayName: user?.displayName,
                         avatarUrl: user?.avatarUrl ?? null,
                       },
@@ -138,12 +176,16 @@ export const useChatStore = create<IChatState>()(
           // set({ messageLoading: false });
         }
       },
-      addMessage: async (message) => {
+      addMessage: async (message: any) => {
         try {
           const user = useAuthStore.getState().user;
           const { fetchMessages } = get();
 
-          message.isOwn = message.senderId === user?._id;
+          const senderId =
+            typeof message.senderId === 'object'
+              ? message.senderId._id
+              : message.senderId;
+          message.isOwn = senderId === user?._id;
 
           const convoId = message.conversationId;
 
@@ -172,13 +214,6 @@ export const useChatStore = create<IChatState>()(
         } catch (error) {
           console.error('Store addMessage Error:', error);
         }
-      },
-      updateConversation: (updatedConversation) => {
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === updatedConversation._id ? { ...c, ...updatedConversation } : c
-          ),
-        }));
       },
       markAsSeen: async () => {
         try {
@@ -220,6 +255,42 @@ export const useChatStore = create<IChatState>()(
         } catch (error) {
           console.log('Store createGroup Error:', error);
           throw error;
+        } finally {
+          set({ convoLoading: false });
+        }
+      },
+      handleStartChat: async (targetUserId) => {
+        try {
+          set({ convoLoading: true });
+          const res = await chatService.handleStartChat(targetUserId);
+
+          if (res.conversation) {
+            // CÓ HỘI THOẠI CŨ
+            set({
+              activeConversationId: res.conversation._id,
+              tempChatUser: null,
+            });
+            get().fetchMessages(res.conversation._id);
+          } else {
+            // CHƯA CÓ HỘI THOẠI
+            set({
+              activeConversationId: null, // Không có ID hội thoại thực tế
+              tempChatUser: res.targetUser, // Lưu thông tin người này để hiện Header
+            });
+            // Xóa tin nhắn cũ của cửa sổ trước đó nếu có
+            set({
+              messages: {
+                ...get().messages,
+                ['temp']: {
+                  items: [],
+                  hasMore: false,
+                  nextCursor: null,
+                },
+              },
+            });
+          }
+        } catch (error) {
+          console.error('Store handleStartChat Error:', error);
         } finally {
           set({ convoLoading: false });
         }

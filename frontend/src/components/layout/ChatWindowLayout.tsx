@@ -9,40 +9,44 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const ChatWindowLayout = () => {
-  // const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const messageLoading = useChatStore((s) => s.messageLoading);
-  // const messages = useChatStore((s) => s.messages);
+  const activeConversationId = useChatStore((s) => s.activeConversationId);
+  const conversations = useChatStore((s) => s.conversations);
   const markAsSeen = useChatStore((s) => s.markAsSeen);
-  const selectedConvo = useChatStore(
-    (s) => s.conversations.find((c) => c._id === s.activeConversationId) ?? null
-  );
+  const tempChatUser = useChatStore((s) => s.tempChatUser);
 
-  // const selectedConvo = conversations.find((c) => c._id === activeConversationId) ?? null;
+  // const messages = useChatStore((s) => s.messages);
+  const selectedConvo = conversations.find((c) => c._id === activeConversationId) ?? null;
+
+  // useEffect(() => {
+  //   if (!selectedConvo) return;
+
+  //   const myId = useAuthStore.getState().user?._id;
+  //   const hasUnread = selectedConvo.unreadCounts[myId!] > 0;
+
+  //   if (!hasUnread) return;
+
+  //   const markSeen = async () => {
+  //     try {
+  //       await markAsSeen();
+  //     } catch (error) {
+  //       console.error('Lỗi khi markSeen: ', error);
+  //     }
+  //   };
+  //   markSeen();
+  // }, [markAsSeen, selectedConvo]);
+
+  const myId = useAuthStore((s) => s.user?._id);
+  const unreadCount = selectedConvo?.unreadCounts?.[myId ?? ''] ?? 0;
 
   useEffect(() => {
-    if (!selectedConvo) return;
+    if (!activeConversationId) return;
+    if (unreadCount === 0) return;
 
-    const myId = useAuthStore.getState().user?._id;
-    const hasUnread = selectedConvo.unreadCounts[myId!] > 0;
+    markAsSeen();
+  }, [activeConversationId, unreadCount, markAsSeen]);
 
-    if (!hasUnread) return;
-
-    const markSeen = async () => {
-      try {
-        await markAsSeen();
-      } catch (error) {
-        console.error('Lỗi khi markSeen: ', error);
-      }
-    };
-    markSeen();
-  }, [markAsSeen, selectedConvo]);
-
-  if (!selectedConvo) {
+  if (!selectedConvo && !tempChatUser) {
     return <ChatWelcomeScreen />;
-  }
-
-  if (messageLoading) {
-    return <ChatWindowSkeleton />;
   }
 
   return (
@@ -51,15 +55,15 @@ const ChatWindowLayout = () => {
     rounded-sm shadow-md"
     >
       {/* header */}
-      <ChatWindowHeader chat={selectedConvo} />
+      <ChatWindowHeader chat={selectedConvo} tempUser={tempChatUser} />
 
       {/* body */}
       <div className="flex-1 overflow-y-auto bg-primary-foreground">
-        <ChatWindowBody />
+        <ChatWindowBody isTemp={!!tempChatUser} />
       </div>
 
       {/* footer */}
-      <MessageInput selectedConvo={selectedConvo} />
+      <MessageInput selectedConvo={selectedConvo} tempUser={tempChatUser} />
     </SidebarInset>
   );
 };

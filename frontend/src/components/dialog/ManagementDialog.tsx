@@ -45,7 +45,7 @@ const ManagementDialog = () => {
             </TabsList>
             {/* Friends */}
             <TabsContent value="friends">
-              <Friends />
+              <Friends onSuccess={() => setOpen(false)} />
             </TabsContent>
             {/* Create group */}
             <TabsContent value="create-group">

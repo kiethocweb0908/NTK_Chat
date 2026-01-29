@@ -1,7 +1,5 @@
-import React from 'react';
-
 const ChatWindowSkeleton = () => {
-  return <div>ChatWindowSkeleton</div>;
+  return <div>Đang tải tin nhắn...</div>;
 };
 
 export default ChatWindowSkeleton;

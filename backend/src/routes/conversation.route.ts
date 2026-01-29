@@ -8,7 +8,7 @@ import {
 } from '../controllers/conversation.controller';
 const conversationRoutes = Router()
   .post('/add-group', createGroup)
-  .get('/by-user', getConversationByUser)
+  .get('/with-user', getConversationByUser)
   .get('/', getConversations)
   .get('/:conversationId/messages', getMessages)
   .patch(`/:conversationId/seen`, markAsSeen);

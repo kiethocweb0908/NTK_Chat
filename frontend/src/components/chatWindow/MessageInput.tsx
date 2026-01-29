@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/useAuthStore';
-import type { IConversation } from '@/types/chat';
+import type { IConversation, IUserpopulate } from '@/types/chat';
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import { ImagePlus, Send } from 'lucide-react';
@@ -8,10 +8,16 @@ import EmojoPicker from './EmojoPicker';
 import { useChatStore } from '@/stores/useChatStore';
 import { toast } from 'sonner';
 
-const MessageInput = ({ selectedConvo }: { selectedConvo: IConversation }) => {
+interface IMessageInput {
+  selectedConvo: IConversation | null;
+  tempUser: IUserpopulate | null;
+}
+
+const MessageInput = ({ selectedConvo }: IMessageInput) => {
   const user = useAuthStore((s) => s.user);
   const sendDirectMessage = useChatStore((s) => s.sendDirectMessage);
   const sendGroupMessage = useChatStore((s) => s.sendGroupMessage);
+  const tempChatUser = useChatStore((s) => s.tempChatUser);
   const [value, setValue] = useState('');
 
   if (!user) return;
@@ -19,34 +25,34 @@ const MessageInput = ({ selectedConvo }: { selectedConvo: IConversation }) => {
   // gửi tin
   const sendMessge = async () => {
     const messageContent = value.trim();
-    if (!messageContent || !selectedConvo) return;
+    if (!messageContent || (!selectedConvo && !tempChatUser)) return;
 
     try {
-      let recipientId = user?._id;
-      const conversationId = selectedConvo._id;
+      let recipientId = '';
+      let conversationId = selectedConvo?._id;
 
-      if (selectedConvo.type === 'direct') {
-        const otherParticipant = selectedConvo.participants.find(
-          (p) => p._id !== user?._id
-        );
-        if (!otherParticipant) {
-          toast.error('Không tìm thấy người nhận');
-          return;
+      if (selectedConvo) {
+        if (selectedConvo.type === 'direct' || selectedConvo.type === 'self') {
+          const otherParticipant = selectedConvo.participants.find(
+            (p) => p.userId._id !== user?._id
+          );
+          recipientId = otherParticipant?.userId._id || user._id || '';
         }
-        recipientId = otherParticipant._id;
+      } else if (tempChatUser) {
+        recipientId = tempChatUser._id;
       }
 
       const commonData = {
         content: messageContent,
         images: [],
-        conversationId,
+        // conversationId,
       };
       setValue('');
 
-      if (selectedConvo.type === 'group') {
-        await sendGroupMessage(commonData);
+      if (selectedConvo && selectedConvo.type === 'group') {
+        await sendGroupMessage({ ...commonData, conversationId: conversationId! });
       } else {
-        await sendDirectMessage({ ...commonData, recipientId });
+        await sendDirectMessage({ ...commonData, recipientId, conversationId });
       }
     } catch (error: any) {
       console.error(error);

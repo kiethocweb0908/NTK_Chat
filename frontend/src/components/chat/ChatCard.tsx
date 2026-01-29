@@ -57,7 +57,7 @@ const ChatCard = memo(
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 flex-1 min-w-0">{subtitle}</div>
+              <div className="flex items-center gap-1 flex-1 min-w-0">{subtitle} </div>
               <MoreHorizontal
                 className="size-4 text-muted-foreground 
             opacity-0 group-hover:opacity-100 "
