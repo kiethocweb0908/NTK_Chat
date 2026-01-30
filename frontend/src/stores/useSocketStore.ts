@@ -41,9 +41,11 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
 
     // tin nhắn mới
     socket.on('new-message', ({ newMessage, updatedConversation }) => {
-      useChatStore.getState().addMessage(newMessage);
+      const user = useAuthStore.getState().user;
+      if (newMessage.senderId !== user?._id)
+        useChatStore.getState().addMessage(newMessage);
 
-      console.log('updatedConversation: ', updatedConversation);
+      // console.log('updatedConversation: ', updatedConversation);
       const existing = useChatStore
         .getState()
         .conversations.some((c) => c._id === updatedConversation._id);

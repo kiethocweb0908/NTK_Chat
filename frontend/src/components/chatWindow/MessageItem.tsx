@@ -1,12 +1,13 @@
 import { cn, formatMessageTime } from '@/lib/utils';
-import type { IConversation, IMessage, IParticipant } from '@/types/chat';
+import type { IMessage } from '@/types/chat';
 import UserAvatar from '../chat/UserAvatar';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { memo } from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface IMessageItemProps {
-  message: IMessage;
+  message: IMessage & { status?: 'sending' | 'sent' | 'error' };
   isGroupBreak: boolean;
   isEndOfGroup: boolean;
   isGroup: boolean;
@@ -78,13 +79,15 @@ const MessageItem = memo(
         <div
           className={cn(
             'max-w-xs lg:max-w-md space-y-1 flex flex-col',
-            message.isOwn ? 'items-end' : 'items-start'
+            message.isOwn ? 'items-end' : 'items-start',
+            message.status === 'sending' && 'opacity-70'
           )}
         >
           <Card
             className={cn(
               'p-3 gap-0',
-              message.isOwn ? 'chat-bubble-sent border-0' : 'bg-received'
+              message.isOwn ? 'chat-bubble-sent border-0' : 'bg-received',
+              message.status === 'error' && 'border border-destructive animate-shake'
             )}
           >
             {isGroup && isGroupBreak && !message.isOwn && (
@@ -105,7 +108,7 @@ const MessageItem = memo(
           )}
 
           {/* status */}
-          {message.isOwn && isLastMessage && (
+          {/* {message.isOwn && isLastMessage && (
             <Badge
               variant="outline"
               className={cn(
@@ -118,6 +121,42 @@ const MessageItem = memo(
               {lastMessageStatus == 'delivered' && 'Đã gửi'}
               {lastMessageStatus == 'seen' && 'Đã xem'}
             </Badge>
+          )} */}
+
+          {/* 3. Hiển thị Trạng thái chi tiết */}
+          {message.isOwn && (
+            <div className="flex items-center gap-1 px-1">
+              {/* Đang gửi: Hiện icon xoay nhẹ */}
+              {message.status === 'sending' && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Đang gửi...
+                </span>
+              )}
+
+              {/* Lỗi: Hiện chữ Đỏ */}
+              {message.status === 'error' && (
+                <span className="text-[10px] text-destructive font-medium flex items-center gap-1">
+                  ⚠️ Gửi lỗi
+                </span>
+              )}
+
+              {/* Tin nhắn thật: Hiện Đã gửi/Đã xem như cũ */}
+              {!message.status || message.status === 'sent'
+                ? isLastMessage && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-xs px-1.5 py-0.5 h-4 border-0',
+                        lastMessageStatus === 'seen'
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {lastMessageStatus === 'delivered' ? 'Đã gửi' : 'Đã xem'}
+                    </Badge>
+                  )
+                : null}
+            </div>
           )}
         </div>
       </div>

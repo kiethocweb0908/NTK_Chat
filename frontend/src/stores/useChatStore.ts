@@ -116,17 +116,65 @@ export const useChatStore = create<IChatState>()(
       },
       // Gửi tin 1-1
       sendDirectMessage: async (data) => {
+        const { activeConversationId, messages, moveConversationToTop, tempChatUser } =
+          get();
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+
+        // 1. Tạo ID tạm thời (giúp UI không bị trùng và để sau này thay thế)
+        const tempId = `temp-${Date.now()}`;
+        const convoId = data.conversationId || activeConversationId || 'temp';
+
+        // 2. Tạo tin nhắn "giả" (Optimistic Message)
+        const optimisticMessage: IMessage = {
+          _id: tempId,
+          conversationId: convoId,
+          senderId: user._id,
+          content: data.content,
+          images: [],
+          status: 'sending', // Trạng thái đang gửi
+          isOwn: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        // 3. Đẩy tin nhắn giả vào UI ngay lập tức
+        set((state) => {
+          const currentConvo = state.messages[convoId] || { items: [] };
+          return {
+            messages: {
+              ...state.messages,
+              [convoId]: {
+                ...currentConvo,
+                items: [...currentConvo.items, optimisticMessage],
+              },
+            },
+          };
+        });
+
         try {
           set({ isSending: true });
-
-          const { activeConversationId, moveConversationToTop, tempChatUser } = get();
+          // await new Promise((resolve) => setTimeout(resolve, 5000));
           const res = await chatService.sendDirecMessage(data);
 
-          set((state) => ({
-            conversations: state.conversations.map((c) =>
-              c._id === activeConversationId ? { ...c, seenBy: [] } : c
-            ),
-          }));
+          // 4. Khi thành công: Thay thế tin nhắn "giả" bằng tin nhắn "thật" từ Server
+          set((state) => {
+            const currentItems = state.messages[convoId]?.items || [];
+            console.log('currentItems: ', currentItems);
+            return {
+              messages: {
+                ...state.messages,
+                [convoId]: {
+                  ...state.messages[convoId],
+                  items: currentItems.map((m) =>
+                    m._id === tempId ? { ...res, status: 'sent', isOwn: true } : m
+                  ),
+                },
+              },
+            };
+          });
+
+          console.log('mới: ', get().messages[convoId].items);
 
           if (activeConversationId) {
             moveConversationToTop(activeConversationId);
@@ -138,6 +186,19 @@ export const useChatStore = create<IChatState>()(
             });
           }
         } catch (error) {
+          // 5. Nếu lỗi: Cập nhật trạng thái thành 'error' để user biết mà gửi lại
+          set((state) => ({
+            messages: {
+              ...state.messages,
+              [convoId]: {
+                ...state.messages[convoId],
+                items: state.messages[convoId].items.map((m) =>
+                  m._id === tempId ? { ...m, status: 'error' } : m
+                ),
+              },
+            },
+          }));
+
           console.error('Store sendDirectMessage Error:', error);
           throw error;
         } finally {
@@ -146,40 +207,102 @@ export const useChatStore = create<IChatState>()(
       },
       // Gửi tin group
       sendGroupMessage: async (data) => {
-        try {
-          // set({ messageLoading: true });
-          const { activeConversationId } = get();
-          const user = useAuthStore.getState().user;
-          if (!user) return;
-          await chatService.sendGroupMessage(data);
+        const { activeConversationId, moveConversationToTop } = get();
+        const user = useAuthStore.getState().user;
+        if (!user) return;
 
-          set((state) => ({
-            conversations: state.conversations.map((c) =>
-              c._id === activeConversationId
-                ? {
-                    ...c,
-                    seenBy: [
-                      {
-                        _id: user?._id,
-                        userName: user.userName,
-                        displayName: user?.displayName,
-                        avatarUrl: user?.avatarUrl ?? null,
-                      },
-                    ],
-                  }
-                : c
-            ),
-          }));
+        const tempId = `temp-${Date.now()}`;
+        const convoId = data.conversationId || activeConversationId;
+        if (!convoId) return;
+
+        // 1. Tạo tin nhắn giả cho Group
+        const optimisticMessage: IMessage = {
+          _id: tempId,
+          conversationId: convoId,
+          senderId: user._id,
+          content: data.content,
+          images: [],
+          status: 'sending',
+          isOwn: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        // 2. Đẩy vào UI ngay
+        set((state) => {
+          const currentConvo = state.messages[convoId] || { items: [] };
+          return {
+            messages: {
+              ...state.messages,
+              [convoId]: {
+                ...currentConvo,
+                items: [...currentConvo.items, optimisticMessage],
+              },
+            },
+          };
+        });
+
+        try {
+          set({ isSending: true });
+          // await new Promise((resolve) => setTimeout(resolve, 3000));
+
+          const res = await chatService.sendGroupMessage(data);
+
+          set((state) => {
+            const currentItems = state.messages[convoId]?.items || [];
+            console.log('currentItems: ', currentItems);
+            return {
+              messages: {
+                ...state.messages,
+                [convoId]: {
+                  ...state.messages[convoId],
+                  items: currentItems.map((m) =>
+                    m._id === tempId ? { ...res, status: 'sent', isOwn: true } : m
+                  ),
+                },
+              },
+              conversations: state.conversations.map((c) =>
+                c._id === activeConversationId
+                  ? {
+                      ...c,
+                      seenBy: [
+                        {
+                          _id: user?._id,
+                          userName: user.userName,
+                          displayName: user?.displayName,
+                          avatarUrl: user?.avatarUrl ?? null,
+                        },
+                      ],
+                    }
+                  : c
+              ),
+            };
+          });
+          moveConversationToTop(convoId);
         } catch (error) {
+          // 4. Báo lỗi nếu gửi thất bại
+          set((state) => ({
+            messages: {
+              ...state.messages,
+              [convoId]: {
+                ...state.messages[convoId],
+                items: state.messages[convoId].items.map((m) =>
+                  m._id === tempId ? { ...m, status: 'error' } : m
+                ),
+              },
+            },
+          }));
+
           console.error('Store sendGroupMessage Error:', error);
           throw error;
         } finally {
-          // set({ messageLoading: false });
+          set({ isSending: false });
         }
       },
       addMessage: async (message: any) => {
         try {
           const user = useAuthStore.getState().user;
+          const convoId = message.conversationId;
           const { fetchMessages } = get();
 
           const senderId =
@@ -188,8 +311,6 @@ export const useChatStore = create<IChatState>()(
               : message.senderId;
           message.isOwn = senderId === user?._id;
 
-          const convoId = message.conversationId;
-
           let prevItems = get().messages[convoId]?.items ?? [];
 
           if (prevItems.length === 0) {
@@ -197,6 +318,9 @@ export const useChatStore = create<IChatState>()(
             prevItems = get().messages[convoId]?.items ?? [];
           }
 
+          console.log('prevItems: ', prevItems);
+          console.log('message._id: ', message._id);
+          console.log(prevItems.some((m) => m._id === message._id));
           set((state) => {
             if (prevItems.some((m) => m._id === message._id)) {
               return state;

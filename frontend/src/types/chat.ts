@@ -56,10 +56,11 @@ export interface IMessage {
 
   replyTo?: string;
 
-  createdAt: string;
-  updatedAt: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string | null;
 
   isOwn?: boolean;
+  status?: 'sending' | 'sent' | 'error';
 }
 
 export interface IFetchMessageProps {
