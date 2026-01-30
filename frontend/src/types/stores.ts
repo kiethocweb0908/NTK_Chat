@@ -20,6 +20,7 @@ import type {
   ISent,
 } from './friend';
 import type { CreateGroupType } from '@/schemas/conversation';
+import type { UpdateProfileRequest } from '@/schemas/user.schema';
 
 export interface IAuthStore {
   accessToken: string | null;
@@ -56,6 +57,7 @@ export interface IChatState {
   convoLoading: boolean;
   messageLoading: boolean;
   tempChatUser: IUserpopulate | null;
+  isSending: boolean;
 
   reset: () => void;
 
@@ -110,4 +112,12 @@ export interface IFriendState {
   deleteFriend: (targetUserId: string) => Promise<string>;
   searchFriends: (keyword: string) => Promise<void>;
   getFriends: (limit: number, cursor?: string | null) => Promise<void>;
+}
+
+export interface IuseUserState {
+  isUpdating: boolean;
+  imageFile: File | null;
+  setImageFile: (file: File) => void;
+  clearImageFile: () => void;
+  updateProfile: (profileData: UpdateProfileRequest) => Promise<string>;
 }

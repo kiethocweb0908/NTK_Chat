@@ -27,3 +27,33 @@ export const searchUsers = asyncHandler(async (req: Request, res: Response) => {
     users,
   });
 });
+
+export const editInformation = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user._id;
+    const data = req.body;
+
+    // Khởi tạo biến để hứng thông tin ảnh
+    let imageData = undefined;
+
+    if (req.file) {
+      imageData = {
+        url: req.file.path,
+        publicId: req.file.filename,
+      };
+    }
+
+    if (!req.file && Object.keys(data).length === 0)
+      return res.status(HTTPSTATUS.NO_CONTENT);
+
+    const updatedUser = await userService.editInfoService(
+      userId,
+      data,
+      imageData
+    );
+    res.status(HTTPSTATUS.OK).json({
+      message: 'Cập nhật thông tin thành công!',
+      updatedUser,
+    });
+  }
+);

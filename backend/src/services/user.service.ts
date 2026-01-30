@@ -1,3 +1,4 @@
+import cloudinary from '../config/cloudinary.config';
 import Friend from '../models/Friend.model';
 import FriendRequest from '../models/FriendRequest.model';
 import User from '../models/User.model';
@@ -74,4 +75,35 @@ export const searchUsersService = async (keyword: string, meId: string) => {
       requestId: request?.requestId,
     };
   });
+};
+
+export const editInfoService = async (
+  userId: string,
+  data: any,
+  imageData?: { url: string; publicId: string }
+) => {
+  const updateFields = { ...data };
+
+  if (imageData) {
+    const currentUser = await User.findById(userId);
+    if (currentUser?.avatarId) {
+      try {
+        cloudinary.uploader.destroy(currentUser.avatarId);
+        console.log('Xóa ảnh cũ thành công:', currentUser.avatarId);
+      } catch (error) {
+        console.error('Lỗi khi xóa ảnh cũ trên Cloudinary:', error);
+      }
+    }
+
+    updateFields.avatarUrl = imageData.url;
+    updateFields.avatarId = imageData.publicId;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: updateFields },
+    { new: true }
+  );
+
+  return updatedUser;
 };

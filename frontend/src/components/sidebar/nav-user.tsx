@@ -26,9 +26,12 @@ import {
 } from '@/components/ui/sidebar';
 import type { IUser } from '@/types/user';
 import Logout from '../auth/Logout';
+import { useState } from 'react';
+import ProfileDialog from '../profileDialog/profileDialog';
 
 export function NavUser({ user }: { user: IUser }) {
   const { isMobile } = useSidebar();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <SidebarMenu>
@@ -75,15 +78,15 @@ export function NavUser({ user }: { user: IUser }) {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
                 <UserIcon className="text-muted-foreground dark:group-focus:text-accent-foreground!" />
                 Tài khoản
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
+              {/* <DropdownMenuItem>
                 <Bell className="text-muted-foreground dark:group-focus:text-accent-foreground!" />
                 Thông báo
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
@@ -93,6 +96,9 @@ export function NavUser({ user }: { user: IUser }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Đưa Dialog ra ngoài để nó độc lập hoàn toàn */}
+        <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
       </SidebarMenuItem>
     </SidebarMenu>
   );

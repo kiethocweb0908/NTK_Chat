@@ -64,6 +64,7 @@ const ChatList = () => {
 
         if (convo.type === 'self') {
           name = `Ghi chú: ${user.displayName}`;
+          avatarUrl = user.avatarUrl;
           userId = user._id;
         }
 

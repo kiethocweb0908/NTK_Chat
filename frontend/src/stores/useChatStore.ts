@@ -14,6 +14,7 @@ export const useChatStore = create<IChatState>()(
       convoLoading: false,
       messageLoading: false,
       tempChatUser: null,
+      isSending: false,
 
       setActiveConversation: (id) => set({ activeConversationId: id }),
       reset: () => {
@@ -116,7 +117,7 @@ export const useChatStore = create<IChatState>()(
       // Gửi tin 1-1
       sendDirectMessage: async (data) => {
         try {
-          // set({ messageLoading: true });
+          set({ isSending: true });
 
           const { activeConversationId, moveConversationToTop, tempChatUser } = get();
           const res = await chatService.sendDirecMessage(data);
@@ -140,7 +141,7 @@ export const useChatStore = create<IChatState>()(
           console.error('Store sendDirectMessage Error:', error);
           throw error;
         } finally {
-          // set({ messageLoading: false });
+          set({ isSending: false });
         }
       },
       // Gửi tin group
