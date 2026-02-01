@@ -21,6 +21,8 @@ const Friends = ({ onSuccess }: { onSuccess: () => void }) => {
   const clearFriend = useFriendStore((s) => s.clearFriend);
   const hasNextPage = useFriendStore((s) => s.hasNextPage);
   const nextCursor = useFriendStore((s) => s.nextCursor);
+  const chatbots = useFriendStore((s) => s.chatbots);
+  const getChatBots = useFriendStore((s) => s.getChatBots);
   const handleStartChat = useChatStore((s) => s.handleStartChat);
 
   const [keyword, setKeyword] = useState('');
@@ -44,6 +46,13 @@ const Friends = ({ onSuccess }: { onSuccess: () => void }) => {
     fetchInitialFriends();
   }, [keyword]);
 
+  useEffect(() => {
+    if (chatbots.length) return;
+
+    const fetch = async () => await getChatBots();
+    fetch();
+  }, []);
+
   // cuộn
   const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
     if (loading || isSearchingFriends || !hasNextPage) return;
@@ -63,45 +72,83 @@ const Friends = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="mb-4">Danh sách bạn bè</CardTitle>
-        <CardDescription>
-          <SearchComponent
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Tìm bạn bè..."
-          />
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-muted-foreground text-sm overflow-y-auto min-h-65 max-h-65">
-        {friends.length ? (
-          friends.map((f, index) => {
-            return (
-              <div
-                key={index}
-                className="flex items-center gap-4 py-2
-            hover:bg-secondary"
-              >
-                <UserAvatar type="chat" name={f.displayName} avatarUrl={f.avatarUrl} />
+    <>
+      <Card className="gap-2">
+        <CardHeader>
+          <CardTitle>Chat bot</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {chatbots.length > 0 ? (
+            chatbots.map((chatbot) => (
+              <div className="flex gap-4">
+                <UserAvatar
+                  type="chat"
+                  name={chatbot.displayName}
+                  avatarUrl={chatbot.avatarUrl}
+                />
                 <div className="flex items-center justify-between flex-1">
-                  <p>{f.displayName}</p>
+                  <div>
+                    <p className="text-sm">{chatbot.displayName}</p>
+                    <p className="text-xs">{chatbot.bio}</p>
+                  </div>
                   <Button
                     disabled={loading}
                     variant={'sent'}
-                    onClick={() => onMessageClick(f._id)}
+                    onClick={() => onMessageClick(chatbot._id)}
                   >
                     Nhắn tin
                   </Button>
                 </div>
               </div>
-            );
-          })
-        ) : (
-          <p className="select-none leading-65 text-center">Không tìm thấy bạn bè</p>
-        )}
-      </CardContent>
-    </Card>
+            ))
+          ) : (
+            <p>Không có ai</p>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="mt-2">
+        <CardHeader>
+          <CardTitle className="mb-4">Danh sách bạn bè</CardTitle>
+          <CardDescription>
+            <SearchComponent
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Tìm bạn bè..."
+            />
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground text-sm overflow-y-auto min-h-65 max-h-65">
+          {friends.length ? (
+            friends.map((f, index) => {
+              return (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 py-2
+            hover:bg-secondary"
+                >
+                  <UserAvatar type="chat" name={f.displayName} avatarUrl={f.avatarUrl} />
+                  <div className="flex items-center justify-between flex-1">
+                    <div>
+                      <p>{f.displayName}</p>
+                      <p className="text-xs">{f.userName}</p>
+                    </div>
+                    <Button
+                      disabled={loading}
+                      variant={'sent'}
+                      onClick={() => onMessageClick(f._id)}
+                    >
+                      Nhắn tin
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="select-none leading-65 text-center">Không tìm thấy bạn bè</p>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

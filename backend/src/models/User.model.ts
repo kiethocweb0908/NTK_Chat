@@ -10,6 +10,15 @@ export interface IUser {
   avatarId?: string | null;
   displayName: string;
   bio?: string | null;
+
+  // --- THÊM MỚI ---
+  googleId?: string; // Lưu ID từ Google
+  isVerified: boolean; // Trạng thái đã xác thực email chưa
+  otpCode?: string; // Lưu mã OTP tạm thời
+  otpExpires?: Date; // Thời gian hết hạn OTP
+  isBot: boolean; // Để phân biệt User thường và Chatbot
+  // ----------------
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,19 +37,23 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
     },
     email: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
       lowercase: true,
       min: 6,
+      required: function (this: IUser) {
+        return !this.isBot && !this.googleId;
+      },
     },
     // phone: {
     //   type: String,
     // },
     hashPassword: {
       type: String,
-      required: true,
       min: 6,
+      required: function (this: IUser) {
+        return !this.isBot && !this.googleId;
+      },
     },
     avatarUrl: {
       type: String,
@@ -60,6 +73,12 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       default: null,
     },
+    //------------
+    googleId: { type: String, unique: true, sparse: true }, // sparse để cho phép null nhưng vẫn unique
+    isVerified: { type: Boolean, default: false },
+    otpCode: { type: String },
+    otpExpires: { type: Date },
+    isBot: { type: Boolean, default: false, index: true },
   },
   {
     timestamps: true,
@@ -67,6 +86,8 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       transform: (doc, ret) => {
         if (ret) {
           delete (ret as any).hashPassword;
+          delete ret.otpCode;
+          delete ret.otpExpires;
         }
         return ret;
       },
@@ -75,9 +96,9 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
 );
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('hashPassword')) {
-    return next();
-  }
+  if (this.isBot || this.googleId) return next();
+
+  if (!this.isModified('hashPassword')) return next();
 
   try {
     this.hashPassword = await hashValue(this.hashPassword);
@@ -88,6 +109,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.comparaValue = async function (val: string) {
+  if (this.isBot || this.googleId) return false;
   return comparaValue(val, this.hashPassword);
 };
 

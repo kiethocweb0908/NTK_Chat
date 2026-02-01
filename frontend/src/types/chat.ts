@@ -3,6 +3,7 @@ export interface IUserpopulate {
   userName?: string;
   displayName: string;
   avatarUrl?: string | null;
+  isBot?: boolean;
 }
 
 export interface IParticipant {

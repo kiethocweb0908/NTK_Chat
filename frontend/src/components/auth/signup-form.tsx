@@ -10,7 +10,7 @@ import { Checkbox } from '../ui/checkbox';
 import { type SignUpFormValues, signUpFormSchema } from '@/schemas/auth.schema';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 export function SignupForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [isChecked, setIsChecked] = useState(false);
@@ -165,7 +165,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
 
               {/* button submit */}
               <Button
-                variant="secondary"
+                variant="sent"
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}
@@ -175,9 +175,9 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
 
               <div className="text-center text-sm *:[a]:hover:text-primary text-muted-foreground">
                 Đã có tài khoản?{' '}
-                <a href="/login" className="underline underline-offset-4">
+                <Link to="/login" className="underline underline-offset-4">
                   Đăng nhập
-                </a>
+                </Link>
               </div>
             </div>
           </form>

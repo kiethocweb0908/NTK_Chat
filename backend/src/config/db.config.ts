@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Env } from './env.config';
+import { createBotUser } from '../seed';
 
 export const connectDB = async () => {
   try {

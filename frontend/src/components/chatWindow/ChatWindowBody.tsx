@@ -6,6 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { getChatTimestampLabel } from '@/lib/utils';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import ChatWindowSkeleton from './ChatWindowSkeleton';
+import TypingIndicator from './TypingIndicator';
 
 const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -25,6 +26,9 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
   const hasMore = allMessages[activeConversationId!]?.hasMore ?? false;
   const selectedConvo = conversations.find((c) => c._id === activeConversationId);
 
+  const isTyping = useChatStore((s) => s.isTyping[activeConversationId!]);
+  console.log('isTyping: ', isTyping);
+  const botParticipant = selectedConvo?.participants.find((p) => p.userId.isBot);
   // ref
   const containerRef = useRef<HTMLDivElement>(null);
   const key = `chat-scroll-${activeConversationId}`;
@@ -132,6 +136,16 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
               overflow: 'visible',
             }}
           >
+            {isTyping && (
+              <>
+                <p>a</p>
+                <TypingIndicator
+                  name={botParticipant?.userId.displayName}
+                  avatar={botParticipant?.userId.avatarUrl}
+                />
+              </>
+            )}
+
             {reversedMessages.map((message, index) => {
               // Trong mảng đã đảo [Mới nhất (10h) -> Cũ nhất (8h)]:
               // - newerMsg: index - 1 (về thời gian là sau tin hiện tại)

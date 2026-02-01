@@ -15,6 +15,13 @@ export const useChatStore = create<IChatState>()(
       messageLoading: false,
       tempChatUser: null,
       isSending: false,
+      isTyping: {},
+
+      setTyping: (convoId: string, status: boolean) => {
+        set((state) => ({
+          isTyping: { ...state.isTyping, [convoId]: status },
+        }));
+      },
 
       setActiveConversation: (id) => set({ activeConversationId: id }),
       reset: () => {
@@ -116,8 +123,14 @@ export const useChatStore = create<IChatState>()(
       },
       // Gửi tin 1-1
       sendDirectMessage: async (data) => {
-        const { activeConversationId, messages, moveConversationToTop, tempChatUser } =
-          get();
+        const {
+          activeConversationId,
+          messages,
+          conversations,
+          moveConversationToTop,
+          tempChatUser,
+          setTyping,
+        } = get();
         const user = useAuthStore.getState().user;
         if (!user) return;
 
@@ -152,6 +165,20 @@ export const useChatStore = create<IChatState>()(
           };
         });
 
+        const currentConvo = conversations.find((c) => c._id === activeConversationId);
+
+        console.log('currentConvo: ', currentConvo);
+        const isChattingWithAI = currentConvo?.participants?.some(
+          (p) => p.userId.isBot === true || p.userId.userName === 'NTK_AI'
+        );
+        console.log('isChattingWithAI: ', isChattingWithAI);
+        console.log('activeConversationId: ', activeConversationId);
+
+        // 3. Chỉ bật typing nếu là chat với AI
+        if (isChattingWithAI && activeConversationId) {
+          setTyping(activeConversationId, true);
+        }
+
         try {
           set({ isSending: true });
           // await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -160,7 +187,6 @@ export const useChatStore = create<IChatState>()(
           // 4. Khi thành công: Thay thế tin nhắn "giả" bằng tin nhắn "thật" từ Server
           set((state) => {
             const currentItems = state.messages[convoId]?.items || [];
-            console.log('currentItems: ', currentItems);
             return {
               messages: {
                 ...state.messages,
@@ -173,8 +199,6 @@ export const useChatStore = create<IChatState>()(
               },
             };
           });
-
-          console.log('mới: ', get().messages[convoId].items);
 
           if (activeConversationId) {
             moveConversationToTop(activeConversationId);
@@ -318,9 +342,6 @@ export const useChatStore = create<IChatState>()(
             prevItems = get().messages[convoId]?.items ?? [];
           }
 
-          console.log('prevItems: ', prevItems);
-          console.log('message._id: ', message._id);
-          console.log(prevItems.some((m) => m._id === message._id));
           set((state) => {
             if (prevItems.some((m) => m._id === message._id)) {
               return state;
@@ -419,6 +440,61 @@ export const useChatStore = create<IChatState>()(
         } finally {
           set({ convoLoading: false });
         }
+      },
+      handleBotChunk: (data) => {
+        const convoId = data.conversationId;
+
+        // TẮT typing ngay khi có dữ liệu đổ về
+        if (get().isTyping[convoId]) {
+          get().setTyping(convoId, false);
+        }
+
+        set((state) => {
+          const currentConvo = state.messages[convoId] || {
+            items: [],
+            hasMore: false,
+            nextCursor: null,
+          };
+          const currentMessages = currentConvo.items;
+
+          const existingIndex = currentMessages.findIndex(
+            (m) => m._id === data.messageId
+          );
+
+          let updatedItems: IMessage[];
+
+          if (existingIndex !== -1) {
+            // Nếu đã có: Cộng dồn nội dung
+            updatedItems = [...currentMessages];
+            updatedItems[existingIndex] = {
+              ...updatedItems[existingIndex],
+              content: updatedItems[existingIndex].content + data.chunk,
+              updatedAt: new Date().toISOString(), // Cập nhật cả thời gian update
+            };
+          } else {
+            // Nếu chưa có: Tạo mới và ép kiểu sang IMessage
+            const newBotMsg: IMessage = {
+              _id: data.messageId,
+              conversationId: convoId,
+              senderId: data.senderId as any, // Ép kiểu nếu senderId trong IMessage là object
+              content: data.chunk,
+              images: [], // Bổ sung trường thiếu
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(), // Bổ sung trường thiếu
+            };
+            updatedItems = [...currentMessages, newBotMsg];
+          }
+
+          return {
+            messages: {
+              ...state.messages,
+              [convoId]: {
+                ...currentConvo,
+                items: updatedItems,
+              },
+            },
+          };
+        });
       },
     }),
     {

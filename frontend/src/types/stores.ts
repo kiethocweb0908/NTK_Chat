@@ -8,6 +8,7 @@ import type {
 } from '@/schemas/message.schema';
 import type { Socket } from 'socket.io-client';
 import type {
+  IChatBot,
   IDecline,
   IDeleteFriend,
   IFirendRequestDecline,
@@ -58,7 +59,9 @@ export interface IChatState {
   messageLoading: boolean;
   tempChatUser: IUserpopulate | null;
   isSending: boolean;
+  isTyping: Record<string, boolean>;
 
+  setTyping: (convoId: string, status: boolean) => void;
   reset: () => void;
 
   setActiveConversation: (id: string | null) => void;
@@ -75,6 +78,12 @@ export interface IChatState {
   markAsSeen: () => Promise<void>;
   createGroup: (data: CreateGroupType) => Promise<string>;
   handleStartChat: (targetUserId: string) => Promise<void>;
+  handleBotChunk: (data: {
+    conversationId: string;
+    messageId: string;
+    chunk: string;
+    senderId: string;
+  }) => void;
 }
 
 export interface ISocketState {
@@ -90,6 +99,7 @@ export interface IFriendState {
   received: IReceived[];
   hasFetched: boolean;
   users: ISearchUserResponse[];
+  chatbots: IChatBot[];
 
   friends: IFriend[];
   nextCursor: string | null;
@@ -98,6 +108,7 @@ export interface IFriendState {
 
   clearUsers: () => void;
   clearFriend: () => void;
+  clearChatBots: () => void;
 
   updateUserRelationship: (
     userId: string,
@@ -112,6 +123,7 @@ export interface IFriendState {
   deleteFriend: (targetUserId: string) => Promise<string>;
   searchFriends: (keyword: string) => Promise<void>;
   getFriends: (limit: number, cursor?: string | null) => Promise<void>;
+  getChatBots: () => Promise<void>;
 }
 
 export interface IuseUserState {

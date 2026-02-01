@@ -62,3 +62,12 @@ export interface IDeleteFriend {
   message: string;
   oldFriend: IUser;
 }
+
+export interface IChatBot {
+  _id: string;
+  displayName: string;
+  userName?: string;
+  avatarUrl?: string;
+  bio?: string;
+  isBot: boolean;
+}

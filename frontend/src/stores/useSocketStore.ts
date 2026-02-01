@@ -34,6 +34,22 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       console.log('Đã kết nối với socket');
     });
 
+    // --- LẮNG NGHE BOT CHUNK Ở ĐÂY ---
+    socket.on('bot-chunk', (data) => {
+      const chatStore = useChatStore.getState();
+
+      const isFirstChunk = !chatStore.messages[data.conversationId]?.items.some(
+        (m) => m._id === data.messageId
+      );
+
+      // Gọi action handleBotChunk từ ChatStore để cập nhật UI
+      chatStore.handleBotChunk(data);
+
+      if (isFirstChunk && chatStore.activeConversationId === data.conversationId) {
+        chatStore.markAsSeen();
+      }
+    });
+
     // online users
     socket.on('online-users', (userIds: string[]) => {
       set({ onlineUsers: userIds });

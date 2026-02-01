@@ -9,6 +9,7 @@ export const useFriendStore = create<IFriendState>((set, get) => ({
   hasFetched: false,
   users: [],
   friends: [],
+  chatbots: [],
   nextCursor: null,
   hasNextPage: false,
   isSearchingFriends: false,
@@ -18,6 +19,9 @@ export const useFriendStore = create<IFriendState>((set, get) => ({
   },
   clearFriend: () => {
     set({ friends: [] });
+  },
+  clearChatBots: () => {
+    set({ chatbots: [] });
   },
 
   updateUserRelationship: (userId, relationship, requestId) => {
@@ -173,6 +177,21 @@ export const useFriendStore = create<IFriendState>((set, get) => ({
     } catch (error) {
       console.error('Store getFriends Error:', error);
       throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  getChatBots: async () => {
+    if (get().chatbots.length > 0) return;
+    try {
+      set({ loading: true });
+      const res = await friendService.getChatBots();
+      set({
+        chatbots: res,
+      });
+    } catch (error) {
+      console.error('getChatBots error: ', error);
+      return;
     } finally {
       set({ loading: false });
     }

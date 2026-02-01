@@ -115,12 +115,7 @@ function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
               </div>
 
               {/* button submit */}
-              <Button
-                variant="default"
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <Button variant="sent" type="submit" disabled={isSubmitting}>
                 Đăng nhập
               </Button>
 

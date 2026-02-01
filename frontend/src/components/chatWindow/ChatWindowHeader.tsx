@@ -65,29 +65,6 @@ const ChatWindowHeader = ({ chat, tempUser }: IChatWindowHeader) => {
     );
   }
 
-  // let name = '';
-  // let avatarUrl = null;
-  // let otherUserId = '';
-
-  // if (chat.type === 'direct') {
-  //   const otherUser = chat.participants.find((p) => p.userId._id !== user?._id);
-  //   if (!user || !otherUser) return;
-
-  //   name = otherUser.userId.displayName ?? 'Người dùng';
-  //   avatarUrl = otherUser.userId.avatarUrl;
-  //   otherUserId = otherUser.userId._id;
-  // }
-
-  // if (chat.type === 'group') {
-  //   name = chat.group?.name ? `NHÓM: ${chat.group?.name}` : 'chưa có tên';
-  // }
-
-  // if (chat.type === 'self') {
-  //   name = 'Ghi chú của tôi';
-  //   avatarUrl = chat.participants[0].userId.avatarUrl;
-  //   otherUserId = chat.participants[0].userId._id;
-  // }
-
   return (
     <header className="sticky top-0 z-10 px-4 py-2 flex items-center bg-background">
       <div className="flex items-center gap-2 w-full">

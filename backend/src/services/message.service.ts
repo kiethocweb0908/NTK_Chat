@@ -10,9 +10,9 @@ import {
   updateConversationAfterCreateMessage,
 } from '../utils/messageHelper';
 import { BadRequestException, NotFoundException } from '../utils/app-error';
-import mongoose from 'mongoose';
 import { getSocketIdByUserId, io } from '../socket/index.socket';
-import { clearScreenDown } from 'readline';
+import User from '../models/User.model';
+import { handleBotResponse } from './gemini.service';
 
 // gửi tn 1-1
 export const sendDirectService = async (
@@ -44,8 +44,10 @@ export const sendDirectService = async (
     });
   }
 
+  const recipient = await User.findById(recipientId);
+
   // kiểm tra nếu chat với người khác
-  if (!isSelf) {
+  if (!isSelf && !recipient?.isBot) {
     // kiểm tra người gửi/nhận có nằm trong hội thoại
     validateParticipant(
       conversation,
@@ -76,7 +78,7 @@ export const sendDirectService = async (
   await conversation.populate([
     {
       path: 'participants.userId',
-      select: '_id userName displayName avatarUrl',
+      select: '_id userName displayName avatarUrl isBot',
     },
     {
       path: 'lastMessage.senderId',
@@ -88,7 +90,6 @@ export const sendDirectService = async (
   // emitNewMessage(io, conversation, message);
 
   if (!conversationId && conversation) {
-    console.log('có vào đây');
     for (const member of conversation.participants) {
       const memberId = member.userId._id;
       const socketId = getSocketIdByUserId(memberId.toString());
@@ -100,11 +101,18 @@ export const sendDirectService = async (
       }
     }
   }
-  console.log('Bên ngoài');
   io.to(conversation._id.toString()).emit('new-message', {
     newMessage: message,
     updatedConversation: conversation,
   });
+
+  // --- LOGIC CHATBOT ---
+  // const recipient = await User.findById(recipientId);
+  if (recipient?.isBot && content?.trim()) {
+    // Không dùng await ở đây để Bot chạy ngầm,
+    // không bắt User phải đợi Bot trả lời xong mới xong request API.
+    handleBotResponse(conversation, content, recipient);
+  }
 
   return message;
 };

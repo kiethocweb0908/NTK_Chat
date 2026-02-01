@@ -66,7 +66,10 @@ export const getConversationByUserService = async (
     type: isSelf ? 'self' : 'direct',
     participants: { $size: isSelf ? 1 : 2 },
     'participants.userId': isSelf ? userA : { $all: [userA, userB] },
-  }).populate('participants.userId', '_id userName displayName avatarUrl');
+  }).populate(
+    'participants.userId',
+    '_id userName displayName avatarUrl isBot'
+  );
 
   if (!conversation) {
     const targetUser = await User.findById(userB).select(
@@ -87,7 +90,7 @@ export const getConversationsService = async (userId: string) => {
     .populate([
       {
         path: 'participants.userId',
-        select: '_id userName displayName avatarUrl',
+        select: '_id userName displayName avatarUrl isBot',
       },
       {
         path: 'lastMessage.senderId',

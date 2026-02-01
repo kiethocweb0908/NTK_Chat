@@ -3,6 +3,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.middleware';
 import { NotFoundException } from '../utils/app-error';
 import { HTTPSTATUS } from '../config/http.config';
 import * as userService from '../services/user.service';
+import User from '../models/User.model';
 
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user;
@@ -57,3 +58,12 @@ export const editInformation = asyncHandler(
     });
   }
 );
+
+export const getAIUsers = asyncHandler(async (req: Request, res: Response) => {
+  const aiBots = await User.find({ isBot: true }).select(
+    '_id displayName avatarUrl userName isBot bio'
+  );
+  return res.status(HTTPSTATUS.OK).json({
+    aiBots,
+  });
+});

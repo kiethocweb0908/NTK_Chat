@@ -40,4 +40,8 @@ export const friendService = {
     });
     return res.data;
   },
+  async getChatBots() {
+    const res = await axiosInstance.get('/user/ai-bots');
+    return res.data.aiBots;
+  },
 };
