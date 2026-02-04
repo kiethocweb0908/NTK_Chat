@@ -1,4 +1,10 @@
-import type { SignInFormValues, SignUpApiRequest } from '@/schemas/auth.schema';
+import type {
+  resendOTPType,
+  ResetPasswordType,
+  SignInFormValues,
+  SignUpApiRequest,
+  VerifyOTPType,
+} from '@/schemas/auth.schema';
 import type { IUser } from './user';
 import type { ISignInResponse, ISignUpResponse } from './auth';
 import type { IConversation, IMessage, IUserpopulate } from './chat';
@@ -27,11 +33,21 @@ export interface IAuthStore {
   accessToken: string | null;
   user: IUser | null;
   loading: boolean;
+  tempEmail: string | null;
+  resetToken: string | null;
+  authType: 'REGISTER' | 'FORGOT_PASSWORD' | null;
 
   clearState: () => void;
   setAccessToken: (accessToken: string) => void;
 
   signUp: (data: SignUpApiRequest) => Promise<ISignUpResponse>;
+  resendOTP: (data: resendOTPType) => Promise<string>;
+  verifyOTPRegister: (data: VerifyOTPType) => Promise<void>;
+
+  forgotPassword: (email: string) => Promise<string>;
+  verifyOTPforgotPassword: (data: VerifyOTPType) => Promise<void>;
+  resetPassword: (data: ResetPasswordType) => Promise<string>;
+
   signIn: (data: SignInFormValues) => Promise<ISignInResponse>;
   signOut: () => Promise<void>;
   fetchMe: () => Promise<void>;

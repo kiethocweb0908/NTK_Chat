@@ -9,6 +9,10 @@ import { useEffect } from 'react';
 import { useAuthStore } from './stores/useAuthStore';
 import { useSocketStore } from './stores/useSocketStore';
 import { unlockAudio } from './lib/notificationSound';
+import OtpPage from './pages/OtpPage';
+import NotFoundPage from './pages/NotFoundPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   const isDark = useThemeStore((state) => state.isDark);
@@ -55,11 +59,17 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-otp" element={<OtpPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<ChatAppPage />} />
           </Route>
+
+          {/* 404 Route - Phải luôn ở dưới cùng */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </>

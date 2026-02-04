@@ -18,7 +18,7 @@ export const useFriendStore = create<IFriendState>((set, get) => ({
     set({ users: [] });
   },
   clearFriend: () => {
-    set({ friends: [] });
+    set({ friends: [], received: [], sent: [], hasFetched: false });
   },
   clearChatBots: () => {
     set({ chatbots: [] });

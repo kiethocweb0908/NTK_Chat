@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Eye, UserRound, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
@@ -125,11 +125,14 @@ function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
                   Đăng ký
                 </Link>
               </div>
+              <div className="text-center text-muted-foreground ">
+                <Link to="/forgot-password">Quên mật khẩu?</Link>
+              </div>
             </div>
           </form>
           <div className="bg-muted relative hidden md:block">
             <img
-              src="/login.jpeg"
+              src="/login.webp"
               alt="Image"
               className="absolute inset-0 h-full w-full  object-cover dark:brightness-[0.75] "
             />

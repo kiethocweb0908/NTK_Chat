@@ -13,11 +13,11 @@ export interface IUser {
 
   // --- THÊM MỚI ---
   googleId?: string; // Lưu ID từ Google
-  isVerified: boolean; // Trạng thái đã xác thực email chưa
-  otpCode?: string; // Lưu mã OTP tạm thời
-  otpExpires?: Date; // Thời gian hết hạn OTP
   isBot: boolean; // Để phân biệt User thường và Chatbot
   // ----------------
+
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 
   createdAt: Date;
   updatedAt: Date;
@@ -73,11 +73,11 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       default: null,
     },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
+
     //------------
     googleId: { type: String, unique: true, sparse: true }, // sparse để cho phép null nhưng vẫn unique
-    isVerified: { type: Boolean, default: false },
-    otpCode: { type: String },
-    otpExpires: { type: Date },
     isBot: { type: Boolean, default: false, index: true },
   },
   {
@@ -86,8 +86,6 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       transform: (doc, ret) => {
         if (ret) {
           delete (ret as any).hashPassword;
-          delete ret.otpCode;
-          delete ret.otpExpires;
         }
         return ret;
       },
@@ -99,6 +97,10 @@ userSchema.pre('save', async function (next) {
   if (this.isBot || this.googleId) return next();
 
   if (!this.isModified('hashPassword')) return next();
+
+  if (this.hashPassword.startsWith('$2b$')) {
+    return next();
+  }
 
   try {
     this.hashPassword = await hashValue(this.hashPassword);

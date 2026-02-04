@@ -23,11 +23,11 @@ const RequestReceived = ({ decline, accept }: IRequestReceived) => {
             >
               <UserAvatar
                 type="chat"
-                name={r.from.displayName}
-                avatarUrl={r.from.avatarUrl}
+                name={r.from?.displayName}
+                avatarUrl={r.from?.avatarUrl}
               />
               <div className="flex items-center justify-between flex-1">
-                <p>{r.from.displayName}</p>
+                <p>{r.from?.displayName}</p>
                 <div className="flex gap-2">
                   <Button
                     disabled={loading}

@@ -30,7 +30,7 @@ const renderContentWithLargeEmojis = (content: string) => {
     // Kiểm tra xem mảnh này có phải là emoji không
     if (emojiRegex.test(part)) {
       return (
-        <span key={index} className="text-2xl inline-block align-middle mx-0.5">
+        <span key={index} className="text-2xl inline-block align-middle -translate-y-1">
           {part}
         </span>
       );
@@ -95,7 +95,7 @@ const MessageItem = memo(
                 {senderName}
               </p>
             )}
-            <p className="text-sm leading-relaxed wrap-break-word flex items-end">
+            <p className="text-sm leading-relaxed wrap-break-word text-justify">
               {renderContentWithLargeEmojis(message.content || '')}
             </p>
           </Card>

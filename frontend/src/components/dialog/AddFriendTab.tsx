@@ -32,6 +32,9 @@ const AddFriendTab = () => {
   const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
+    console.log('hasFetched: ', hasFetched);
+    console.log('received: ', received);
+    console.log('sent: ', sent);
     if (!hasFetched) {
       getFriendRequest();
     }

@@ -138,7 +138,6 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
           >
             {isTyping && (
               <>
-                <p>a</p>
                 <TypingIndicator
                   name={botParticipant?.userId.displayName}
                   avatar={botParticipant?.userId.avatarUrl}

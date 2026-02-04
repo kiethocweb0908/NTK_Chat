@@ -270,6 +270,24 @@
       transform: scale(1);
     }
   }
+
+  /* 1. Định nghĩa hiệu ứng chớp tắt */
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* 2. Tạo class để áp dụng hiệu ứng */
+  .animate-caret-blink {
+    animation: caret-blink 1.2s ease-out infinite;
+  }
 }
 
 @media (prefers-color-scheme: light) {

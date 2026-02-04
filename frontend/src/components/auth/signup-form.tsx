@@ -31,7 +31,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
     toast.promise(signUp(dataToSubmit), {
       loading: 'Đang xử lý đăng ký...',
       success: (res) => {
-        navigate('/login');
+        navigate('/verify-otp?type=REGISTER');
         return res?.message || 'Đăng ký thành công!';
       },
       error: (err) => {
@@ -183,17 +183,13 @@ export function SignupForm({ className, ...props }: React.ComponentProps<'div'>)
           </form>
           <div className="bg-muted relative hidden md:block">
             <img
-              src="/register.jpeg"
+              src="/register.webp"
               alt="Image"
               className="absolute inset-0 h-full w-full  object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>
         </CardContent>
       </Card>
-      {/* <FieldDescription className="px-6 text-center">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{' '}
-        and <a href="#">Privacy Policy</a>.
-      </FieldDescription> */}
     </div>
   );
 }

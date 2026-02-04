@@ -10,6 +10,9 @@ export const useAuthStore = create<IAuthStore>()(
       accessToken: null,
       user: null,
       loading: false,
+      tempEmail: null,
+      resetToken: null,
+      authType: null,
 
       clearState: () => {
         set({ accessToken: null, user: null, loading: false });
@@ -28,16 +31,92 @@ export const useAuthStore = create<IAuthStore>()(
           set({ loading: true });
           // gọi api
           const res = await authService.signUp(data);
+          set({ tempEmail: res.email, authType: 'REGISTER' });
           return res;
         } catch (error: any) {
-          // const errorMsg = error.response?.data?.message || 'Đăng ký không thành công';
-          // toast.error(errorMsg);
           console.error('Store SignUp Error:', error);
           throw error;
         } finally {
           set({ loading: false });
         }
       },
+
+      resendOTP: async (data) => {
+        try {
+          set({ loading: true });
+          const message = await authService.resendOTP(data);
+          return message;
+        } catch (error) {
+          console.error('resendOTP error: ', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+      verifyOTPRegister: async (data) => {
+        try {
+          set({ loading: true });
+          useChatStore.getState().reset();
+          const res = await authService.verifyOTPRegister(data);
+          get().setAccessToken(res.accessToken);
+          await get().fetchMe();
+          useChatStore.getState().fetchConversations();
+          set({ tempEmail: null, authType: null });
+          return res.message;
+        } catch (error) {
+          console.error('Store verifyOTP Error:', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      forgotPassword: async (email) => {
+        try {
+          set({ loading: true });
+          const res = await authService.forgotPassword({ email });
+          set({ tempEmail: email, authType: 'FORGOT_PASSWORD' });
+          return res.message;
+        } catch (error) {
+          console.error('forgotPassword error: ', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+      verifyOTPforgotPassword: async (data) => {
+        try {
+          set({ loading: true });
+          const res = await authService.verifyOTPforgotPassword(data);
+          set({ resetToken: res.resetToken });
+          return res.message;
+        } catch (error) {
+          console.error('verifyOTPforgotPassword error: ', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+      resetPassword: async (data) => {
+        try {
+          set({ loading: true });
+          const res = await authService.resetPassword(data);
+          set({
+            user: res.user,
+            accessToken: res.accessToken,
+            tempEmail: null,
+            resetToken: null,
+            authType: null,
+          });
+          return res.message;
+        } catch (error) {
+          console.error('resetPassword error: ', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+
       signIn: async (data) => {
         try {
           set({ loading: true });
@@ -105,7 +184,7 @@ export const useAuthStore = create<IAuthStore>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({ user: state.user, tempEmail: state.tempEmail }),
     }
   )
 );
