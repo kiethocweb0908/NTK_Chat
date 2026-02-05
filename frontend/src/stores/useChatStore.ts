@@ -62,7 +62,9 @@ export const useChatStore = create<IChatState>()(
       // Lấy danh sách cuộc trò chuyện
       fetchConversations: async () => {
         try {
-          set({ convoLoading: true });
+          const isInitialFetch = get().conversations.length === 0;
+          if (isInitialFetch) set({ convoLoading: true });
+
           const { conversations } = await chatService.fetchConversations();
 
           set({ conversations, convoLoading: false });

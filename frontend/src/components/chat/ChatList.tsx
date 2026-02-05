@@ -13,6 +13,7 @@ const ChatList = () => {
   const conversations = useChatStore((state) => state.conversations);
   const user = useAuthStore((s) => s.user);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
+  const convoLoading = useChatStore((s) => s.convoLoading);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
   // const messages = useChatStore((s) => s.messages);
   const fetchMessages = useChatStore((s) => s.fetchMessages);
@@ -23,6 +24,12 @@ const ChatList = () => {
   const visibleConversations = isCollapsed ? conversations.slice(0, 3) : conversations;
 
   if (!user) return null;
+
+  if (convoLoading) {
+    return (
+      <p className="text-sm text-muted-foreground px-2">Đang tải danh sách hội thoại</p>
+    );
+  }
 
   if (!conversations.length) {
     return <p className="text-sm text-muted-foreground px-2">Chưa có cuộc trò chuyện</p>;

@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useChatStore } from '@/stores/useChatStore';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
 
@@ -8,19 +9,19 @@ const ProtectedRoute = () => {
   const loading = useAuthStore((state) => state.loading);
   const refresh = useAuthStore((state) => state.refresh);
   const fetchMe = useAuthStore((state) => state.fetchMe);
+  const fetchConversations = useChatStore((s) => s.fetchConversations);
+  // const convoLoading = useChatStore((s) => s.convoLoading);
 
   const [starting, setStarting] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (!accessToken && user) {
-          await refresh();
-        }
+        if (!accessToken && user) await refresh();
 
-        if (accessToken && !user) {
-          await fetchMe();
-        }
+        if (accessToken && !user) await fetchMe();
+
+        if (accessToken && user) await fetchConversations();
       } catch (error) {
         console.log('Chưa đăng nhập hoặc phiên làm việc hết hạn');
       } finally {

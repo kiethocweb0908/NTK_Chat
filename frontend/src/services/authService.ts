@@ -39,6 +39,11 @@ export const authService = {
     return res.data;
   },
 
+  loginWithGoogle: async (token: string) => {
+    const res = await axiosInstance.post('/auth/google', { token });
+    return res.data;
+  },
+
   signIn: async (data: SignInFormValues) => {
     const res = await axiosInstance.post('/auth/login', data);
     return res.data;

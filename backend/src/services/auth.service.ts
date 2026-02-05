@@ -1,3 +1,4 @@
+import { Env } from '../config/env.config';
 import Otp from '../models/Otp.model';
 import Session from '../models/Session.model';
 import User from '../models/User.model';
@@ -17,6 +18,9 @@ import {
   ResetPasswordType,
 } from '../validators/auth.validator';
 import crypto from 'crypto';
+
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(Env.GOOGLE_CLIENT_ID);
 
 // tạo otp
 const createOTP = () => {
@@ -235,6 +239,39 @@ export const resendOTPService = async ({ email, type }: resendOTPType) => {
   await sendOTPMail(email, newOtp, firstName, type);
 
   return { message: 'Mã OTP mới đã được gửi thành công!' };
+};
+
+// đăng nhập với google
+export const googleLoginService = async (token: string) => {
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: Env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  const { email, name, given_name, picture, sub } = payload;
+
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    user = await User.create({
+      email,
+      userName: `${email.split('@')[0]}_${Math.random().toString(36).slice(-4)}`,
+      avatarUrl: picture,
+      displayName: given_name || name,
+      googleId: sub,
+    });
+  }
+  if (!user.googleId) {
+    user.googleId = sub;
+    await user.save();
+  }
+
+  const { accessToken, refreshToken } = await createSession(
+    user._id.toString()
+  );
+
+  return { user, accessToken, refreshToken };
 };
 
 //======================================================

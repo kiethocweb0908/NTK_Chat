@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { type SignInFormValues, signInSchema } from '@/schemas/auth.schema';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Link, useNavigate } from 'react-router';
+import GoogleAuthButton from './GoogleAuthButton';
 
 function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
   const [isChecked, setIsChecked] = useState(false);
@@ -118,6 +119,7 @@ function SigninpForm({ className, ...props }: React.ComponentProps<'div'>) {
               <Button variant="sent" type="submit" disabled={isSubmitting}>
                 Đăng nhập
               </Button>
+              <GoogleAuthButton />
 
               <div className="text-center text-sm *:[a]:hover:text-primary text-muted-foreground">
                 Chưa có tài khoản?{' '}

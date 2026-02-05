@@ -35,7 +35,13 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && originnalRequest._retryCount < 4) {
       originnalRequest._retryCount += 1;
       try {
-        const res = await axiosInstance.post('auth/refresh');
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
         const newAccessToken = res.data.accessToken;
 
         useAuthStore.getState().setAccessToken(newAccessToken);

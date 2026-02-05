@@ -58,11 +58,12 @@ export const useAuthStore = create<IAuthStore>()(
           set({ loading: true });
           useChatStore.getState().reset();
           const res = await authService.verifyOTPRegister(data);
-          get().setAccessToken(res.accessToken);
-          await get().fetchMe();
-          useChatStore.getState().fetchConversations();
-          set({ tempEmail: null, authType: null });
-          return res.message;
+          const { message, user, accessToken } = res;
+          // get().setAccessToken(res.accessToken);
+          // await get().fetchMe();
+          // useChatStore.getState().fetchConversations();
+          set({ tempEmail: null, authType: null, user, accessToken });
+          return message;
         } catch (error) {
           console.error('Store verifyOTP Error:', error);
           throw error;
@@ -117,6 +118,22 @@ export const useAuthStore = create<IAuthStore>()(
         }
       },
 
+      loginWithGoogle: async (googleToken) => {
+        try {
+          set({ loading: true });
+          const res = await authService.loginWithGoogle(googleToken);
+          const { user, accessToken, message } = res;
+
+          set({ user, accessToken });
+          return message;
+        } catch (error) {
+          console.error('loginWithGoogle error: ', error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+
       signIn: async (data) => {
         try {
           set({ loading: true });
@@ -124,10 +141,12 @@ export const useAuthStore = create<IAuthStore>()(
           useChatStore.getState().reset();
 
           const res = await authService.signIn(data);
-          get().setAccessToken(res.accessToken);
-          await get().fetchMe();
-          useChatStore.getState().fetchConversations();
-          return res.message;
+          const { user, accessToken, message } = res;
+          set({ accessToken, user });
+          // get().setAccessToken(res.accessToken);
+          // await get().fetchMe();
+          // useChatStore.getState().fetchConversations();
+          return message;
         } catch (error) {
           console.error('Store signIn Error:', error);
           throw error;

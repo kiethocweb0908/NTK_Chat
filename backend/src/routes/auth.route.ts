@@ -9,6 +9,7 @@ import {
   forgotPassword,
   verifyOTPforgotPassword,
   resetPassword,
+  googleLogin,
 } from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -22,6 +23,7 @@ const authRoutes = Router()
 
   .post('/resend-otp', resendOTP)
 
+  .post('/google', googleLogin)
   .post('/login', login)
   .post('/logout', protect, logout)
   .post('/refresh', refreshToken);

@@ -124,6 +124,22 @@ export const resetPassword = asyncHandler(
   }
 );
 
+// google login
+export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  const { user, accessToken, refreshToken } =
+    await authService.googleLoginService(token);
+
+  setRefreshTokenCooke(res, 'refreshToken', refreshToken);
+
+  return res.status(HTTPSTATUS.OK).json({
+    message: 'Đăng nhập với Google thành công!',
+    user,
+    accessToken,
+  });
+});
+
 // refreshToken
 export const refreshToken = asyncHandler(
   async (req: Request, res: Response) => {

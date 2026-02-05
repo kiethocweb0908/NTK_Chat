@@ -111,7 +111,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.comparaValue = async function (val: string) {
-  if (this.isBot || this.googleId) return false;
+  if (this.isBot || !this.hashPassword) return false;
   return comparaValue(val, this.hashPassword);
 };
 

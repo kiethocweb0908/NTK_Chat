@@ -47,6 +47,7 @@ export interface IAuthStore {
   forgotPassword: (email: string) => Promise<string>;
   verifyOTPforgotPassword: (data: VerifyOTPType) => Promise<void>;
   resetPassword: (data: ResetPasswordType) => Promise<string>;
+  loginWithGoogle: (googleToken: string) => Promise<string>;
 
   signIn: (data: SignInFormValues) => Promise<ISignInResponse>;
   signOut: () => Promise<void>;
