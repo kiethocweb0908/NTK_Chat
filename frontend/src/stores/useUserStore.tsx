@@ -1,6 +1,5 @@
 import { userService } from '@/services/userService';
 import type { IuseUserState } from '@/types/stores';
-import { toast } from 'sonner';
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
 

@@ -43,7 +43,7 @@ export interface IConversationResponse {
   conversations: IConversation[];
 }
 
-interface IImages {
+export interface IImages {
   imgUrl?: string;
   imgId?: string;
 }

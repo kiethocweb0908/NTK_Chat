@@ -6,6 +6,10 @@ import { Badge } from '../ui/badge';
 import { memo } from 'react';
 import { Loader2 } from 'lucide-react';
 import MessageActions from './MessageActions';
+import { useChatStore } from '@/stores/useChatStore';
+import MessageImageGrid from './MessageImageGrid';
+import MessageReply from './MessageReply';
+import MessageStatus from './MessageStatus';
 
 interface IMessageItemProps {
   message: IMessage & { status?: 'sending' | 'sent' | 'error' };
@@ -72,8 +76,7 @@ const MessageItem = memo(
           </div>
         )}
 
-        {/* tin nhắn */}
-
+        {/* tin nhắn, trạng thái và thời gian */}
         <div
           className={cn(
             'max-w-xs lg:max-w-md space-y-1 flex flex-col',
@@ -96,42 +99,19 @@ const MessageItem = memo(
                 message.isDeleted && 'opacity-90 select-none'
               )}
             >
+              {/* Người gửi */}
               {isGroup && isGroupBreak && !message.isOwn && (
                 <p className={cn('text-xs font-bold leading-relaxed wrap-break-word')}>
                   {senderName}
                 </p>
               )}
 
-              {/* HIỂN THỊ TIN NHẮN GỐC (REPLY BOX) */}
+              {/* Tin trả lời */}
               {message.replyTo && !message.isDeleted && (
-                <div
-                  className={cn(
-                    'my-1 p-2.5 rounded-sm flex flex-col gap-0.5 text-left transition-all',
-                    // Nếu là tin của mình gửi, phần reply nên sáng/mờ hơn để nổi nội dung chính
-                    message.isOwn
-                      ? 'bg-accent/30 border-white/30 text-white'
-                      : 'bg-secondary-foreground/10 border-primary text-foreground'
-                  )}
-                >
-                  {/* <div className="flex items-center gap-1">
-                    <span className="text-[11px] font-bold uppercase opacity-80">
-                      {message.replyTo.isOwn
-                        ? 'Bạn'
-                        : message.replyTo.senderId?.name || 'Người dùng'}
-                    </span>
-                  </div> */}
-
-                  <div className="text-xs line-clamp-2 opacity-70 leading-normal">
-                    {message.replyTo.isDeleted ? (
-                      <span className="italic">Tin nhắn đã được thu hồi</span>
-                    ) : (
-                      message.replyTo.content ||
-                      (message.replyTo.images?.length ? '[Hình ảnh]' : '')
-                    )}
-                  </div>
-                </div>
+                <MessageReply replyTo={message.replyTo} isOwn={message.isOwn} />
               )}
 
+              {/* Nội dung chữ */}
               <p
                 className={cn(
                   'text-sm leading-relaxed wrap-break-word text-justify',
@@ -143,12 +123,17 @@ const MessageItem = memo(
                   ? 'Tin nhắn đã được thu hồi'
                   : renderContentWithLargeEmojis(message.content || '')}
               </p>
+
+              {/* Ảnh */}
+              {!message.isDeleted && message.images && message.images.length > 0 && (
+                <MessageImageGrid images={message.images} />
+              )}
             </Card>
 
             <MessageActions message={message} isOwn={message.isOwn} />
           </div>
 
-          {/* time */}
+          {/* Thời gian */}
           {isEndOfGroup && (
             <span className="text-xs text-muted-foreground px-1">
               {formatMessageTime(new Date(message.createdAt))}
@@ -157,38 +142,11 @@ const MessageItem = memo(
 
           {/* Hiển thị Trạng thái chi tiết */}
           {message.isOwn && (
-            <div className="flex items-center gap-1 px-1">
-              {/* Đang gửi: Hiện icon xoay nhẹ */}
-              {message.status === 'sending' && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Đang gửi...
-                </span>
-              )}
-
-              {/* Lỗi: Hiện chữ Đỏ */}
-              {message.status === 'error' && (
-                <span className="text-[10px] text-destructive font-medium flex items-center gap-1">
-                  ⚠️ Gửi lỗi
-                </span>
-              )}
-
-              {/* Tin nhắn thật: Hiện Đã gửi/Đã xem như cũ */}
-              {!message.status || message.status === 'sent'
-                ? isLastMessage && (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'text-xs px-1.5 py-0.5 h-4 border-0',
-                        lastMessageStatus === 'seen'
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {lastMessageStatus === 'delivered' ? 'Đã gửi' : 'Đã xem'}
-                    </Badge>
-                  )
-                : null}
-            </div>
+            <MessageStatus
+              status={message.status}
+              isLastMessage={isLastMessage}
+              lastMessageStatus={lastMessageStatus}
+            />
           )}
         </div>
       </div>

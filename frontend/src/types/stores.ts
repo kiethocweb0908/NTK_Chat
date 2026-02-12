@@ -8,10 +8,6 @@ import type {
 import type { IUser } from './user';
 import type { ISignInResponse, ISignUpResponse } from './auth';
 import type { IConversation, IMessage, IUserpopulate } from './chat';
-import type {
-  sendDirectMessageRequest,
-  sendGroupMessageRequest,
-} from '@/schemas/message.schema';
 import type { Socket } from 'socket.io-client';
 import type {
   IChatBot,
@@ -77,6 +73,11 @@ export interface IChatState {
   tempChatUser: IUserpopulate | null;
   isSending: boolean;
   isTyping: Record<string, boolean>;
+  selectedImages: File[];
+
+  addImages: (files: File[]) => void;
+  removeImage: (index: number) => void;
+  clearImages: () => void;
 
   setTyping: (convoId: string, status: boolean) => void;
   reset: () => void;
@@ -91,8 +92,8 @@ export interface IChatState {
 
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId?: string) => Promise<void>;
-  sendDirectMessage: (data: sendDirectMessageRequest) => Promise<void>;
-  sendGroupMessage: (data: sendGroupMessageRequest) => Promise<void>;
+  sendDirectMessage: (data: FormData) => Promise<void>;
+  sendGroupMessage: (data: FormData) => Promise<void>;
   addMessage: (message: IMessage) => Promise<void>;
 
   markAsSeen: () => Promise<void>;

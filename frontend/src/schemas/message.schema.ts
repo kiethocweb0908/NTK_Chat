@@ -5,14 +5,8 @@ const ID = z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID không hợp lệ');
 // 1. Schema chung cho tất cả loại tin nhắn
 const baseMessageSchema = z.object({
   content: z.string().trim().optional(),
-  images: z
-    .array(
-      z.object({
-        imgUrl: z.string().url(),
-        imgId: z.string(),
-      })
-    )
-    .optional(),
+  images: z.array(z.any()).optional(),
+  replyTo: z.string().optional(),
 });
 
 // Hàm kiểm tra tin nhắn không được rỗng (Dùng chung)

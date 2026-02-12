@@ -10,11 +10,12 @@ export const updateConversationAfterCreateMessage = (
   message: HydratedDocument<IMessage>,
   senderId: string | mongoose.Types.ObjectId
 ) => {
-  const lastContent = message.content
-    ? message.content
-    : message.images && message.images.length > 0
-      ? '[Hình ảnh]'
-      : '';
+  const lastContent = [
+    message.content,
+    message.images && message.images.length > 0 ? '[Hình ảnh]' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   conversation.set({
     seenBy: [senderId],

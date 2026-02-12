@@ -10,10 +10,26 @@ import { HTTPSTATUS } from '../config/http.config';
 // gửi tin nhắn 1-1
 export const sendDirectMessage = asyncHandler(
   async (req: Request, res: Response) => {
-    const data = sendDirectMessageSchema.parse(req.body);
+    // Lấy thông tin ảnh
+    const files = (req.files as Express.Multer.File[]) || [];
+    const uploadedImages =
+      files?.map((file) => ({
+        imgUrl: file.path,
+        imgId: file.filename,
+      })) || [];
+
+    const dataForValidation = {
+      ...req.body,
+      images: uploadedImages,
+    };
+
+    const validatedData = sendDirectMessageSchema.parse(dataForValidation);
     const senderId = req.user?._id;
 
-    const message = await messageService.sendDirectService(data, senderId);
+    const message = await messageService.sendDirectService(
+      validatedData,
+      senderId
+    );
 
     res.status(HTTPSTATUS.CREATED).json({
       message,
@@ -24,10 +40,26 @@ export const sendDirectMessage = asyncHandler(
 // gửi tin nhắn group
 export const sendGroupMessage = asyncHandler(
   async (req: Request, res: Response) => {
-    const data = sendGroupMessageSchema.parse(req.body);
+    const files = (req.files as Express.Multer.File[]) || [];
+    // Lấy thông tin ảnh
+    const uploadedImages =
+      files?.map((file) => ({
+        imgUrl: file.path,
+        imgId: file.filename,
+      })) || [];
+
+    const dataForValidation = {
+      ...req.body,
+      images: uploadedImages,
+    };
+
+    const validatedData = sendGroupMessageSchema.parse(dataForValidation);
     const senderId = req.user._id;
 
-    const message = await messageService.sendGroupService(data, senderId);
+    const message = await messageService.sendGroupService(
+      validatedData,
+      senderId
+    );
 
     res.status(HTTPSTATUS.CREATED).json({
       message,

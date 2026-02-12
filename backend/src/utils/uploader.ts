@@ -16,3 +16,14 @@ export const storage = new CloudinaryStorage({
     };
   },
 });
+
+export const chatMessageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req: Request, file: Express.Multer.File) => {
+    return {
+      folder: 'NTKChat/messages',
+      transformation: [{ quality: '60', fetch_format: 'webp' }],
+      public_id: `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    };
+  },
+});

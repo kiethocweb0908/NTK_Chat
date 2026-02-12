@@ -22,13 +22,13 @@ export const chatService = {
     return { messages: res.data.messages, cursor: res.data.nextCursor };
   },
 
-  async sendDirecMessage(data: sendDirectMessageRequest) {
+  async sendDirecMessage(data: FormData) {
     const res = await axiosInstance.post(`/message/direct`, data);
 
     return res.data.message;
   },
 
-  async sendGroupMessage(data: sendGroupMessageRequest) {
+  async sendGroupMessage(data: FormData) {
     const res = await axiosInstance.post(`/message/group`, data);
     return res.data.message;
   },

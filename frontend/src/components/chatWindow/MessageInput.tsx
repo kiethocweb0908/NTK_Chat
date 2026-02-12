@@ -2,12 +2,14 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import type { IConversation, IUserpopulate } from '@/types/chat';
 import { useState } from 'react';
 import { Button } from '../ui/button';
-import { ImagePlus, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 import EmojoPicker from './EmojoPicker';
 import { useChatStore } from '@/stores/useChatStore';
 import { toast } from 'sonner';
 import ReplyPreview from './ReplyPreview';
+import ImageSelectedPreview from './ImageSelectedPreview';
+import ImagePicker from './ImagePicker';
 
 interface IMessageInput {
   selectedConvo: IConversation | null;
@@ -21,6 +23,8 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
   const tempChatUser = useChatStore((s) => s.tempChatUser);
   const replyingMessage = useChatStore((s) => s.replyingMessage);
   const setReplyingMessage = useChatStore((s) => s.setReplyingMessage);
+  const selectedImages = useChatStore((s) => s.selectedImages);
+  const clearImages = useChatStore((s) => s.clearImages);
   const [value, setValue] = useState('');
 
   if (!user) return;
@@ -28,7 +32,11 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
   // gửi tin
   const sendMessge = async () => {
     const messageContent = value.trim();
-    if (!messageContent || (!selectedConvo && !tempChatUser)) return;
+    if (
+      (!messageContent && selectedImages.length === 0) ||
+      (!selectedConvo && !tempChatUser)
+    )
+      return;
 
     try {
       let recipientId = '';
@@ -45,21 +53,31 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
         recipientId = tempChatUser._id;
       }
 
-      const commonData = {
-        content: messageContent,
-        images: [],
-        ...(replyingMessage && { replyTo: replyingMessage._id }),
-        // conversationId,
-      };
-      setValue('');
-      if (replyingMessage) {
-        setReplyingMessage(null);
+      // TẠO FORMDATA TẠI ĐÂY
+      const formData = new FormData();
+      formData.append('content', messageContent);
+
+      // Đưa mảng ảnh vào FormData
+      if (selectedImages && selectedImages.length) {
+        selectedImages.forEach((file) => {
+          formData.append('images', file);
+        });
+        clearImages();
       }
 
+      if (replyingMessage) {
+        formData.append('replyTo', replyingMessage._id);
+        setReplyingMessage(null);
+      }
+      setValue('');
+
       if (selectedConvo && selectedConvo.type === 'group') {
-        await sendGroupMessage({ ...commonData, conversationId: conversationId! });
+        formData.append('conversationId', conversationId!);
+        await sendGroupMessage(formData);
       } else {
-        await sendDirectMessage({ ...commonData, recipientId, conversationId });
+        if (recipientId) formData.append('recipientId', recipientId);
+        if (conversationId) formData.append('conversationId', conversationId);
+        await sendDirectMessage(formData);
       }
     } catch (error: any) {
       console.error(error);
@@ -79,15 +97,17 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
 
   return (
     <>
+      {/* trả lời */}
       <ReplyPreview />
+
+      {/* ảnh */}
+      <ImageSelectedPreview />
+
+      {/* input */}
       <div className="flex items-center gap-2 p-3 min-h-14 bg-background">
-        <Button
-          variant={'ghost'}
-          size={'icon'}
-          className="hover:bg-primary/10 transition-smooth"
-        >
-          <ImagePlus className="size-4" />
-        </Button>
+        {/* Chọn ảnh */}
+        <ImagePicker />
+
         {/* khung nhắn */}
         <div className="flex-1 relative">
           <TextareaAutosize
@@ -120,7 +140,7 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
           onClick={sendMessge}
           variant={null}
           className="bg-sent transition-smooth hover:shadow-glow hover:scale-105"
-          disabled={!value.trim()}
+          disabled={!value.trim() && !selectedImages.length}
         >
           <Send className="size-4 text-white" />
         </Button>

@@ -3,7 +3,7 @@ import type { IChatState } from '@/types/stores';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './useAuthStore';
-import type { IConversation, IMessage } from '@/types/chat';
+import type { IConversation, IImages, IMessage } from '@/types/chat';
 
 export const useChatStore = create<IChatState>()(
   persist(
@@ -17,6 +17,21 @@ export const useChatStore = create<IChatState>()(
       isSending: false,
       isTyping: {},
       replyingMessage: null,
+      selectedImages: [],
+
+      addImages: (files) => {
+        set((state) => ({
+          selectedImages: [...state.selectedImages, ...files].slice(0, 5),
+        }));
+      },
+      removeImage: (index) => {
+        set((state) => ({
+          selectedImages: state.selectedImages.filter((_, i) => i !== index),
+        }));
+      },
+      clearImages: () => {
+        set({ selectedImages: [] });
+      },
 
       setTyping: (convoId: string, status: boolean) => {
         set((state) => ({
@@ -145,15 +160,25 @@ export const useChatStore = create<IChatState>()(
 
         // 1. Tạo ID tạm thời (giúp UI không bị trùng và để sau này thay thế)
         const tempId = `temp-${Date.now()}`;
-        const convoId = data.conversationId || activeConversationId || 'temp';
+        const convoId =
+          data.get('conversationId')?.toString() || activeConversationId || 'temp';
+
+        const imagesInFormData = data.getAll('images') as File[];
+        let tempImages: IImages[] = [];
+        if (imagesInFormData.length > 0) {
+          tempImages = imagesInFormData.map((file) => ({
+            imgUrl: URL.createObjectURL(file),
+            imgId: `temp-${Date.now()}-${Math.random()}`,
+          }));
+        }
 
         // 2. Tạo tin nhắn "giả" (Optimistic Message)
         const optimisticMessage: IMessage = {
           _id: tempId,
           conversationId: convoId,
           senderId: user._id,
-          content: data.content,
-          images: [],
+          content: data.get('content')?.toString(),
+          images: tempImages,
           status: 'sending', // Trạng thái đang gửi
           isOwn: true,
           createdAt: new Date(),
@@ -175,13 +200,9 @@ export const useChatStore = create<IChatState>()(
         });
 
         const currentConvo = conversations.find((c) => c._id === activeConversationId);
-
-        console.log('currentConvo: ', currentConvo);
         const isChattingWithAI = currentConvo?.participants?.some(
           (p) => p.userId.isBot === true || p.userId.userName === 'NTK_AI'
         );
-        console.log('isChattingWithAI: ', isChattingWithAI);
-        console.log('activeConversationId: ', activeConversationId);
 
         // 3. Chỉ bật typing nếu là chat với AI
         if (isChattingWithAI && activeConversationId) {
@@ -192,6 +213,14 @@ export const useChatStore = create<IChatState>()(
           set({ isSending: true });
           // await new Promise((resolve) => setTimeout(resolve, 5000));
           const res = await chatService.sendDirecMessage(data);
+
+          if (optimisticMessage.images.length) {
+            optimisticMessage.images.forEach((img) => {
+              if (img.imgUrl!.startsWith('blob:')) {
+                URL.revokeObjectURL(img.imgUrl!);
+              }
+            });
+          }
 
           // 4. Khi thành công: Thay thế tin nhắn "giả" bằng tin nhắn "thật" từ Server
           set((state) => {
@@ -245,16 +274,25 @@ export const useChatStore = create<IChatState>()(
         if (!user) return;
 
         const tempId = `temp-${Date.now()}`;
-        const convoId = data.conversationId || activeConversationId;
+        const convoId = data.get('conversationId')?.toString() || activeConversationId;
         if (!convoId) return;
+
+        const imagesInFormData = data.getAll('images') as File[];
+        let tempImages: IImages[] = [];
+        if (imagesInFormData.length > 0) {
+          tempImages = imagesInFormData.map((file) => ({
+            imgUrl: URL.createObjectURL(file),
+            imgId: `temp-${Date.now()}-${Math.random()}`,
+          }));
+        }
 
         // 1. Tạo tin nhắn giả cho Group
         const optimisticMessage: IMessage = {
           _id: tempId,
           conversationId: convoId,
           senderId: user._id,
-          content: data.content,
-          images: [],
+          content: data.get('content')?.toString(),
+          images: tempImages,
           status: 'sending',
           isOwn: true,
           createdAt: new Date(),
@@ -277,13 +315,18 @@ export const useChatStore = create<IChatState>()(
 
         try {
           set({ isSending: true });
-          // await new Promise((resolve) => setTimeout(resolve, 3000));
 
           const res = await chatService.sendGroupMessage(data);
+          if (optimisticMessage.images.length) {
+            optimisticMessage.images.forEach((img) => {
+              if (img.imgUrl!.startsWith('blob:')) {
+                URL.revokeObjectURL(img.imgUrl!);
+              }
+            });
+          }
 
           set((state) => {
             const currentItems = state.messages[convoId]?.items || [];
-            console.log('currentItems: ', currentItems);
             return {
               messages: {
                 ...state.messages,

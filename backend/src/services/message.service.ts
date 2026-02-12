@@ -13,6 +13,7 @@ import { BadRequestException, NotFoundException } from '../utils/app-error';
 import { getSocketIdByUserId, io } from '../socket/index.socket';
 import User from '../models/User.model';
 import { handleBotResponse } from './gemini.service';
+import cloudinary from '../config/cloudinary.config';
 
 // gửi tn 1-1
 export const sendDirectService = async (
@@ -70,6 +71,7 @@ export const sendDirectService = async (
     senderId,
     content,
     // sau này thêm ảnh
+    images,
     ...(replyTo ? { replyTo } : {}),
   });
 
@@ -153,6 +155,7 @@ export const sendGroupService = async (
     senderId,
     content,
     // sau này thêm ảnh
+    images,
     ...(replyTo ? { replyTo } : {}),
   });
 
@@ -206,9 +209,21 @@ export const recallMessageService = async (
   if (message.isDeleted)
     throw new BadRequestException('Tin nhắn đã được thu hồi trước đó');
 
+  if (message.images && message.images.length > 0) {
+    const deletePromises = message.images
+      .filter((img) => img.imgId)
+      .map((img) => cloudinary.uploader.destroy(img.imgId as string));
+
+    Promise.all(deletePromises)
+      .then(() =>
+        console.log(`Đã xóa sạch ảnh của tin nhắn ${messageId} trên mây`)
+      )
+      .catch((err) => console.error('Lỗi xóa ảnh ngầm:', err));
+  }
+
   message.isDeleted = true;
   message.content = '';
-  // message.images = []; xử lý xoá ảnh trên clound
+  message.images = [];
 
   await message.save();
 
