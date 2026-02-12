@@ -179,6 +179,10 @@ export const useSocketStore = create<ISocketState>((set, get) => ({
       }
     });
 
+    socket.on('message-recalled', (data) => {
+      useChatStore.getState().updateMessageRecalled(data);
+    });
+
     // lỗi kết nối
     socket.on('connect_error', (error) => {
       console.error('Lỗi kết nối Socket:', error.message);

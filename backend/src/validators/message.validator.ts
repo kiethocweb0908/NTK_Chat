@@ -13,6 +13,7 @@ const baseMessageSchema = z.object({
       })
     )
     .optional(),
+  replyTo: ID.optional(),
 });
 
 // Hàm kiểm tra tin nhắn không được rỗng (Dùng chung)

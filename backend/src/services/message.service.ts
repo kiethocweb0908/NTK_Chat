@@ -19,7 +19,7 @@ export const sendDirectService = async (
   data: sendDirectMessageSchemaType,
   senderId: string
 ) => {
-  const { recipientId, conversationId, content, images } = data;
+  const { recipientId, conversationId, content, images, replyTo } = data;
   const isSelf = recipientId.toString() === senderId.toString();
   let conversation;
 
@@ -70,7 +70,21 @@ export const sendDirectService = async (
     senderId,
     content,
     // sau này thêm ảnh
+    ...(replyTo ? { replyTo } : {}),
   });
+
+  if (replyTo) {
+    await message.populate({
+      path: 'replyTo',
+      select: 'content images isDeleted senderId',
+    });
+
+    const replyMsg = message.replyTo as any;
+    if (replyMsg && replyMsg.isDeleted) {
+      replyMsg.content = 'Tin nhắn đã bị thu hồi';
+      replyMsg.images = [];
+    }
+  }
 
   // cập nhật hộp thoại sau khi tạo tin mới
   updateConversationAfterCreateMessage(conversation, message, senderId);
@@ -122,7 +136,7 @@ export const sendGroupService = async (
   data: sendGroupMessageSchemaType,
   senderId: string
 ) => {
-  const { conversationId, content, images } = data;
+  const { conversationId, content, images, replyTo } = data;
 
   // tìm hộp thoại
   const conversation = await Conversation.findOne({
@@ -139,7 +153,21 @@ export const sendGroupService = async (
     senderId,
     content,
     // sau này thêm ảnh
+    ...(replyTo ? { replyTo } : {}),
   });
+
+  if (replyTo) {
+    await message.populate({
+      path: 'replyTo',
+      select: 'content images isDeleted senderId',
+    });
+
+    const replyMsg = message.replyTo as any;
+    if (replyMsg && replyMsg.isDeleted) {
+      replyMsg.content = 'Tin nhắn đã bị thu hồi';
+      replyMsg.images = [];
+    }
+  }
 
   updateConversationAfterCreateMessage(conversation, message, senderId);
   await conversation.save();
@@ -158,6 +186,47 @@ export const sendGroupService = async (
   io.to(conversation._id.toString()).emit('new-message', {
     newMessage: message,
     updatedConversation: conversation,
+  });
+
+  return message;
+};
+
+// thu hồi tin nhắn
+export const recallMessageService = async (
+  messageId: string,
+  userId: string
+) => {
+  const message = await Message.findOne({ _id: messageId, senderId: userId });
+
+  if (!message)
+    throw new NotFoundException(
+      'Tin nhắn không tồn tại hoặc bạn không có quyền thu hồi'
+    );
+
+  if (message.isDeleted)
+    throw new BadRequestException('Tin nhắn đã được thu hồi trước đó');
+
+  message.isDeleted = true;
+  message.content = '';
+  // message.images = []; xử lý xoá ảnh trên clound
+
+  await message.save();
+
+  const conversationId = message.conversationId.toString();
+  const updatedConv = await Conversation.findOneAndUpdate(
+    {
+      _id: conversationId,
+      'lastMessage._id': message._id.toString(),
+    },
+    {
+      $set: { 'lastMessage.content': 'Tin nhắn đã được thu hồi' },
+    }
+  );
+
+  io.to(conversationId).emit('message-recalled', {
+    messageId: message._id,
+    conversationId,
+    ...(updatedConv && { lastMessageContent: 'Tin nhắn đã được thu hồi' }),
   });
 
   return message;

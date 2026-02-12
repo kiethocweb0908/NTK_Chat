@@ -4,7 +4,7 @@ import ChatWindowHeader from './ChatWindowHeader';
 const ChatWelcomeScreen = () => {
   return (
     <SidebarInset className="flex w-full h-full bg-transparent">
-      <ChatWindowHeader />
+      <ChatWindowHeader chat={null} tempUser={null} />
       <div
         className="flex bg-primary-foreground rounded-2xl flex-1 
         items-center justify-center"

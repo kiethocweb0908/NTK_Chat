@@ -130,8 +130,8 @@ export const getMessagesService = async (data: getMessagesQueryType) => {
 
   let messages = await Message.find(query)
     .sort({ createdAt: -1 })
-    .limit(limit + 1);
-  // .populate([{ path: 'senderId', select: 'displayName avatarUrl' }]);
+    .limit(limit + 1)
+    .populate([{ path: 'replyTo', select: 'content images isDeleted' }]);
 
   let nextCursor = null;
 

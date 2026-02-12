@@ -16,11 +16,18 @@ export const useChatStore = create<IChatState>()(
       tempChatUser: null,
       isSending: false,
       isTyping: {},
+      replyingMessage: null,
 
       setTyping: (convoId: string, status: boolean) => {
         set((state) => ({
           isTyping: { ...state.isTyping, [convoId]: status },
         }));
+      },
+
+      setReplyingMessage: (message) => {
+        set({
+          replyingMessage: message,
+        });
       },
 
       setActiveConversation: (id) => set({ activeConversationId: id }),
@@ -480,6 +487,7 @@ export const useChatStore = create<IChatState>()(
               conversationId: convoId,
               senderId: data.senderId as any, // Ép kiểu nếu senderId trong IMessage là object
               content: data.chunk,
+              isOwn: false,
               images: [], // Bổ sung trường thiếu
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(), // Bổ sung trường thiếu
@@ -495,6 +503,62 @@ export const useChatStore = create<IChatState>()(
                 items: updatedItems,
               },
             },
+          };
+        });
+      },
+
+      recallMessage: async (messageId) => {
+        try {
+          set({ messageLoading: true });
+          const res = await chatService.recallMessage(messageId);
+          //...
+          return res.message;
+        } catch (error) {
+          console.error('recallMessage error: ', error);
+          throw error;
+        } finally {
+          set({ messageLoading: false });
+        }
+      },
+      updateMessageRecalled: (data) => {
+        const { conversationId, messageId, lastMessageContent } = data;
+        set((state) => {
+          // 1. Cập nhật tin nhắn trong Record "messages"
+          const currentChat = state.messages[conversationId];
+          let updatedMessagesRecord = { ...state.messages };
+          if (currentChat) {
+            updatedMessagesRecord[conversationId] = {
+              ...currentChat,
+              items: currentChat.items.map((msg) =>
+                msg._id === messageId
+                  ? { ...msg, isDeleted: true, content: '', images: [] }
+                  : msg
+              ),
+            };
+          }
+
+          // 2. Cập nhật danh sách conversations
+          let updatedConversations = [...state.conversations];
+          if (lastMessageContent) {
+            updatedConversations = state.conversations.map((conv) => {
+              return conv._id === conversationId
+                ? {
+                    ...conv,
+                    lastMessage:
+                      conv.lastMessage?._id === messageId
+                        ? {
+                            ...conv.lastMessage,
+                            content: lastMessageContent,
+                          }
+                        : conv.lastMessage,
+                  }
+                : conv;
+            });
+          }
+
+          return {
+            messages: updatedMessagesRecord,
+            conversations: updatedConversations,
           };
         });
       },

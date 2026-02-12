@@ -37,16 +37,23 @@ export const chatService = {
     const res = await axiosInstance.patch(`/conversation/${conversationId}/seen`);
     return res.data;
   },
+
   async createGroup(data: CreateGroupType) {
     const res = await axiosInstance.post(`/conversation/add-group`, data);
     return res.data;
   },
+
   async handleStartChat(targetUserId: string) {
     const res = await axiosInstance.get('/conversation/with-user', {
       params: {
         targetUserId,
       },
     });
+    return res.data;
+  },
+
+  async recallMessage(messageId: string) {
+    const res = await axiosInstance.patch(`/message/recall/${messageId}`);
     return res.data;
   },
 };

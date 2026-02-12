@@ -1,5 +1,3 @@
-// components/chat/TypingIndicator.tsx
-import { cn } from '@/lib/utils';
 import UserAvatar from '../chat/UserAvatar';
 
 const TypingIndicator = ({ name, avatar }: { name?: string; avatar?: string | null }) => {

@@ -27,7 +27,7 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
   const selectedConvo = conversations.find((c) => c._id === activeConversationId);
 
   const isTyping = useChatStore((s) => s.isTyping[activeConversationId!]);
-  console.log('isTyping: ', isTyping);
+  // console.log('isTyping: ', isTyping);
   const botParticipant = selectedConvo?.participants.find((p) => p.userId.isBot);
   // ref
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,7 +53,7 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
   // Cuộn khi có tin mới
   useLayoutEffect(() => {
     scrollToBottom('smooth');
-  }, [messages]);
+  }, [messages.length]);
   // lưu vị trí
   const handleScrollSave = () => {
     const container = containerRef.current;
@@ -115,7 +115,10 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
 
   if (selectedConvo)
     return (
-      <div className="p-4 bg-primary-foreground h-full flex flex-col overflow-hidden">
+      <div
+        onContextMenu={(e) => e.preventDefault()}
+        className="p-4 bg-primary-foreground h-full flex flex-col overflow-hidden"
+      >
         <div
           id="scrollableDiv"
           ref={containerRef}

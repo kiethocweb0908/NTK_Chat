@@ -5,6 +5,7 @@ import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { memo } from 'react';
 import { Loader2 } from 'lucide-react';
+import MessageActions from './MessageActions';
 
 interface IMessageItemProps {
   message: IMessage & { status?: 'sending' | 'sent' | 'error' };
@@ -19,13 +20,10 @@ interface IMessageItemProps {
 
 const renderContentWithLargeEmojis = (content: string) => {
   if (!content) return null;
-
   // Regex này tìm các emoji (bao gồm cả các emoji phức tạp)
   const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
-
   // Tách chuỗi thành mảng, giữ lại cả emoji để map
   const parts = content.split(emojiRegex);
-
   return parts.map((part, index) => {
     // Kiểm tra xem mảnh này có phải là emoji không
     if (emojiRegex.test(part)) {
@@ -56,7 +54,7 @@ const MessageItem = memo(
     return (
       <div
         className={cn(
-          'flex gap-2 message-bounce',
+          'flex gap-2 message-bounce group',
           message.isOwn ? 'justify-end' : 'justify-start',
           isGroupBreak ? 'mt-2.75' : 'mt-1.5'
         )}
@@ -83,22 +81,72 @@ const MessageItem = memo(
             message.status === 'sending' && 'opacity-70'
           )}
         >
-          <Card
+          {/* tin nhắn */}
+          <div
             className={cn(
-              'p-3 gap-0',
-              message.isOwn ? 'chat-bubble-sent border-0' : 'bg-received',
-              message.status === 'error' && 'border border-destructive animate-shake'
+              'flex items-start',
+              message.isOwn ? 'flex-row-reverse' : 'flex-row'
             )}
           >
-            {isGroup && isGroupBreak && !message.isOwn && (
-              <p className={cn('text-xs font-bold leading-relaxed wrap-break-word')}>
-                {senderName}
+            <Card
+              className={cn(
+                'p-3 gap-0',
+                message.isOwn ? 'chat-bubble-sent border-0' : 'bg-received',
+                message.status === 'error' && 'border border-destructive animate-shake',
+                message.isDeleted && 'opacity-90 select-none'
+              )}
+            >
+              {isGroup && isGroupBreak && !message.isOwn && (
+                <p className={cn('text-xs font-bold leading-relaxed wrap-break-word')}>
+                  {senderName}
+                </p>
+              )}
+
+              {/* HIỂN THỊ TIN NHẮN GỐC (REPLY BOX) */}
+              {message.replyTo && !message.isDeleted && (
+                <div
+                  className={cn(
+                    'my-1 p-2.5 rounded-sm flex flex-col gap-0.5 text-left transition-all',
+                    // Nếu là tin của mình gửi, phần reply nên sáng/mờ hơn để nổi nội dung chính
+                    message.isOwn
+                      ? 'bg-accent/30 border-white/30 text-white'
+                      : 'bg-secondary-foreground/10 border-primary text-foreground'
+                  )}
+                >
+                  {/* <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-bold uppercase opacity-80">
+                      {message.replyTo.isOwn
+                        ? 'Bạn'
+                        : message.replyTo.senderId?.name || 'Người dùng'}
+                    </span>
+                  </div> */}
+
+                  <div className="text-xs line-clamp-2 opacity-70 leading-normal">
+                    {message.replyTo.isDeleted ? (
+                      <span className="italic">Tin nhắn đã được thu hồi</span>
+                    ) : (
+                      message.replyTo.content ||
+                      (message.replyTo.images?.length ? '[Hình ảnh]' : '')
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p
+                className={cn(
+                  'text-sm leading-relaxed wrap-break-word text-justify',
+                  message.isDeleted &&
+                    `${message.isOwn ? 'text-muted' : 'text-muted-foreground'} italic`
+                )}
+              >
+                {message.isDeleted
+                  ? 'Tin nhắn đã được thu hồi'
+                  : renderContentWithLargeEmojis(message.content || '')}
               </p>
-            )}
-            <p className="text-sm leading-relaxed wrap-break-word text-justify">
-              {renderContentWithLargeEmojis(message.content || '')}
-            </p>
-          </Card>
+            </Card>
+
+            <MessageActions message={message} isOwn={message.isOwn} />
+          </div>
 
           {/* time */}
           {isEndOfGroup && (
@@ -107,23 +155,7 @@ const MessageItem = memo(
             </span>
           )}
 
-          {/* status */}
-          {/* {message.isOwn && isLastMessage && (
-            <Badge
-              variant="outline"
-              className={cn(
-                'text-xs px-1.5 py-0.5 h-4 border-0',
-                lastMessageStatus === 'seen'
-                  ? 'bg-primary/20 text-primary'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {lastMessageStatus == 'delivered' && 'Đã gửi'}
-              {lastMessageStatus == 'seen' && 'Đã xem'}
-            </Badge>
-          )} */}
-
-          {/* 3. Hiển thị Trạng thái chi tiết */}
+          {/* Hiển thị Trạng thái chi tiết */}
           {message.isOwn && (
             <div className="flex items-center gap-1 px-1">
               {/* Đang gửi: Hiện icon xoay nhẹ */}

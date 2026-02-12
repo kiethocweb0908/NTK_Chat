@@ -13,6 +13,8 @@ export interface IMessage {
 
   replyTo?: mongoose.Types.ObjectId;
 
+  isDeleted: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +46,11 @@ const messageSchema = new Schema<IMessage>(
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {

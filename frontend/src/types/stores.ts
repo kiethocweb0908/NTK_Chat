@@ -81,6 +81,9 @@ export interface IChatState {
   setTyping: (convoId: string, status: boolean) => void;
   reset: () => void;
 
+  replyingMessage: IMessage | null;
+  setReplyingMessage: (message: IMessage | null) => void;
+
   setActiveConversation: (id: string | null) => void;
   updateConversation: (conversation: IConversation) => void;
   moveConversationToTop: (conversationId: string) => void;
@@ -100,6 +103,12 @@ export interface IChatState {
     messageId: string;
     chunk: string;
     senderId: string;
+  }) => void;
+  recallMessage: (messageId: string) => Promise<string>;
+  updateMessageRecalled: (data: {
+    messageId: string;
+    conversationId: string;
+    lastMessageContent?: string;
   }) => void;
 }
 

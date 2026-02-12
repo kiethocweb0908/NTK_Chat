@@ -7,6 +7,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import EmojoPicker from './EmojoPicker';
 import { useChatStore } from '@/stores/useChatStore';
 import { toast } from 'sonner';
+import ReplyPreview from './ReplyPreview';
 
 interface IMessageInput {
   selectedConvo: IConversation | null;
@@ -18,6 +19,8 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
   const sendDirectMessage = useChatStore((s) => s.sendDirectMessage);
   const sendGroupMessage = useChatStore((s) => s.sendGroupMessage);
   const tempChatUser = useChatStore((s) => s.tempChatUser);
+  const replyingMessage = useChatStore((s) => s.replyingMessage);
+  const setReplyingMessage = useChatStore((s) => s.setReplyingMessage);
   const [value, setValue] = useState('');
 
   if (!user) return;
@@ -45,9 +48,13 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
       const commonData = {
         content: messageContent,
         images: [],
+        ...(replyingMessage && { replyTo: replyingMessage._id }),
         // conversationId,
       };
       setValue('');
+      if (replyingMessage) {
+        setReplyingMessage(null);
+      }
 
       if (selectedConvo && selectedConvo.type === 'group') {
         await sendGroupMessage({ ...commonData, conversationId: conversationId! });
@@ -71,51 +78,54 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 min-h-14 bg-background">
-      <Button
-        variant={'ghost'}
-        size={'icon'}
-        className="hover:bg-primary/10 transition-smooth"
-      >
-        <ImagePlus className="size-4" />
-      </Button>
-      {/* khung nhắn */}
-      <div className="flex-1 relative">
-        <TextareaAutosize
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          minRows={2}
-          maxRows={10}
-          maxLength={700}
-          placeholder="Nhập tin nhắn..."
-          className="w-full pl-3 pr-12 p-2 bg-secondary border border-secondary-foreground/30  rounded-md 
+    <>
+      <ReplyPreview />
+      <div className="flex items-center gap-2 p-3 min-h-14 bg-background">
+        <Button
+          variant={'ghost'}
+          size={'icon'}
+          className="hover:bg-primary/10 transition-smooth"
+        >
+          <ImagePlus className="size-4" />
+        </Button>
+        {/* khung nhắn */}
+        <div className="flex-1 relative">
+          <TextareaAutosize
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyPress}
+            minRows={2}
+            maxRows={10}
+            maxLength={700}
+            placeholder="Nhập tin nhắn..."
+            className="w-full pl-3 pr-12 p-2 bg-secondary border border-secondary-foreground/30  rounded-md 
           transition-smooth beautiful-scrollbar resize-none overflow-y-auto"
-        />
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-          <Button
-            asChild
-            variant={'ghost'}
-            size={'icon'}
-            className="size-8 hover:bg-primary/10 transition-smooth"
-          >
-            <div>
-              <EmojoPicker onChange={(emoji: string) => setValue(`${value}${emoji}`)} />
-            </div>
-          </Button>
+          />
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+            <Button
+              asChild
+              variant={'ghost'}
+              size={'icon'}
+              className="size-8 hover:bg-primary/10 transition-smooth"
+            >
+              <div>
+                <EmojoPicker onChange={(emoji: string) => setValue(`${value}${emoji}`)} />
+              </div>
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* nút gửi */}
-      <Button
-        onClick={sendMessge}
-        variant={null}
-        className="bg-sent transition-smooth hover:shadow-glow hover:scale-105"
-        disabled={!value.trim()}
-      >
-        <Send className="size-4 text-white" />
-      </Button>
-    </div>
+        {/* nút gửi */}
+        <Button
+          onClick={sendMessge}
+          variant={null}
+          className="bg-sent transition-smooth hover:shadow-glow hover:scale-105"
+          disabled={!value.trim()}
+        >
+          <Send className="size-4 text-white" />
+        </Button>
+      </div>
+    </>
   );
 };
 

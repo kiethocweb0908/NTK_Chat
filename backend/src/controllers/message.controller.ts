@@ -34,3 +34,21 @@ export const sendGroupMessage = asyncHandler(
     });
   }
 );
+
+// thu hồi tin
+export const recallMessage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user._id;
+    const { messageId } = req.params;
+
+    const message = await messageService.recallMessageService(
+      messageId.toString(),
+      userId.toString()
+    );
+
+    res.status(HTTPSTATUS.OK).json({
+      message: 'Thu hồi thành công',
+      updatedMessage: message,
+    });
+  }
+);

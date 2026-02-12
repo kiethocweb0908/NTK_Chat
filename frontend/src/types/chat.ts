@@ -55,12 +55,13 @@ export interface IMessage {
   content?: string | null;
   images: IImages[];
 
-  replyTo?: string;
+  replyTo?: IMessage;
+  isDeleted?: boolean;
 
   createdAt: Date | string;
   updatedAt: Date | string | null;
 
-  isOwn?: boolean;
+  isOwn: boolean;
   status?: 'sending' | 'sent' | 'error';
 }
 
