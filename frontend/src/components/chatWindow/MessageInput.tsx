@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/useAuthStore';
 import type { IConversation, IUserpopulate } from '@/types/chat';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Send } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -19,6 +19,7 @@ interface IMessageInput {
 const MessageInput = ({ selectedConvo }: IMessageInput) => {
   const user = useAuthStore((s) => s.user);
   const sendDirectMessage = useChatStore((s) => s.sendDirectMessage);
+  const activeConversationId = useChatStore((s) => s.activeConversationId);
   const sendGroupMessage = useChatStore((s) => s.sendGroupMessage);
   const tempChatUser = useChatStore((s) => s.tempChatUser);
   const replyingMessage = useChatStore((s) => s.replyingMessage);
@@ -28,6 +29,10 @@ const MessageInput = ({ selectedConvo }: IMessageInput) => {
   const [value, setValue] = useState('');
 
   if (!user) return;
+
+  useEffect(() => {
+    setValue('');
+  }, [activeConversationId]);
 
   // gửi tin
   const sendMessge = async () => {

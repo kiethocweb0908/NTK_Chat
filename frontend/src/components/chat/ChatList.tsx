@@ -37,7 +37,7 @@ const ChatList = () => {
 
   const handleSelectConversation = async (id: string) => {
     const currentMessages = useChatStore.getState().messages;
-    useChatStore.setState({ tempChatUser: null });
+    useChatStore.setState({ tempChatUser: null, replyingMessage: null });
     if (activeConversationId === id) {
       setActiveConversation(null);
     } else {
