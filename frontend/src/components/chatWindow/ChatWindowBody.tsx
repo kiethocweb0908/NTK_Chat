@@ -83,7 +83,7 @@ const ChatWindowBody = ({ isTemp }: { isTemp?: boolean }) => {
     const lastMessage = selectedConvo?.lastMessage;
     if (!lastMessage) return;
     const seenBy = selectedConvo?.seenBy ?? [];
-    setLastMessageStatus(seenBy.length > 0 ? 'seen' : 'delivered');
+    setLastMessageStatus(seenBy.length > 1 ? 'seen' : 'delivered');
   }, [selectedConvo]);
 
   // fetch thêm tin nhắn

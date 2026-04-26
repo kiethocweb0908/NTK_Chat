@@ -15,7 +15,6 @@ const SearchComponent = ({ value, onChange, placeholder }: ISearchComponent) => 
     >
       <Input
         value={value}
-        disabled={true}
         onChange={onChange}
         className="pl-8 bg-white disabled:bg-black/20"
         placeholder={placeholder}
