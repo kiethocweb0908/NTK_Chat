@@ -27,7 +27,8 @@ import {
 import type { IUser } from '@/types/user';
 import Logout from '../auth/Logout';
 import { useState } from 'react';
-import ProfileDialog from '../profileDialog/profileDialog';
+import ProfileDialog from '../profileDialog/ProfileDialog';
+// import ProfileDialog from '../profileDialog/profileDialog';
 
 export function NavUser({ user }: { user: IUser }) {
   const { isMobile } = useSidebar();

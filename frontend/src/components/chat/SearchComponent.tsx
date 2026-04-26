@@ -2,8 +2,8 @@ import { Search } from 'lucide-react';
 import { Input } from '../ui/input';
 
 interface ISearchComponent {
-  value: string;
-  onChange: (e: any) => void;
+  value?: string;
+  onChange?: (e: any) => void;
   placeholder: string;
 }
 
