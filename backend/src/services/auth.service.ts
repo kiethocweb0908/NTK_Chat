@@ -204,7 +204,7 @@ export const resetPasswordService = async ({
   if (!user)
     throw new UnauthorizedException('Mã xác nhận không hợp lệ hoặc đã hết hạn');
 
-  user.hashPassword = password;
+  user.hashPassword = await hashValue(password);
 
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
